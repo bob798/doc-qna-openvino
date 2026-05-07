@@ -1,2 +1,11 @@
 .DS_Store
 .omc/
+.obsidian/
+
+# QNN SDK（1.4G，不入库）
+*.zip
+qnn/qnn-sdk/
+qnn/models/
+qnn/data/calibration/
+qnn/results/
+qnn/reports/*.json

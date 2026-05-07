@@ -1,0 +1,19 @@
+services:
+  qnn-dev:
+    build:
+      context: ..            # 项目根目录（SDK zip 在根目录）
+      dockerfile: qnn/Dockerfile
+    container_name: paddleocr-qnn
+    volumes:
+      # 项目代码实时同步
+      - .:/workspace/qnn
+      # 模型缓存（避免重复下载）
+      - ./models:/workspace/qnn/models
+      - ./data:/workspace/qnn/data
+      - ./reports:/workspace/qnn/reports
+    environment:
+      - QNN_SDK_ROOT=/opt/qairt/2.41.0.251128
+    stdin_open: true
+    tty: true
+    shm_size: '8g'
+    command: /bin/bash

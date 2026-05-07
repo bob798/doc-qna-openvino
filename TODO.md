@@ -65,13 +65,47 @@
 
 ---
 
+## 高通赛题｜基于 QNN 部署 PaddleOCR-VL 模型
+
+> 技术标签：PaddleOCR-VL，高通 QNN SDK，Hexagon NPU，Paddle2ONNX
+> 截止日期：2026-06-05
+
+### 提交内容
+
+- [x] 模型转换脚本（Paddle → ONNX → QNN 全链路）
+- [x] 转换说明文档
+- [x] 端侧推理服务代码
+- [x] 文档解析 pipeline 代码（参考 doc_parser）
+- [x] 精度对比评测脚本
+- [x] 性能测试脚本
+- [x] Dockerfile + docker-compose
+
+### 验证阶段（待 SDK 就绪后执行）
+
+- [ ] Docker 环境构建成功
+- [ ] 布局检测模型：Paddle → ONNX → QNN 转换跑通
+- [ ] VL 模型：ONNX 导出成功（验证算子兼容性）
+- [ ] VL 模型：QNN 转换成功
+- [ ] HTP-simulator 上推理可运行
+- [ ] 精度损失 ≤ 5%
+- [ ] 性能报告填充实测数据
+
+> 代码目录：[`qnn/`](qnn/)
+
+---
+
 ## 文件索引
 
 | 文件 | 用途 |
 |------|------|
-| `docs/进阶方案.md` | 已提交的进阶任务方案 |
+| `docs/进阶方案.md` | 已提交的进阶任务方案（OpenVINO） |
 | `docs/开发手册.md` | Phase 1-5 执行手册（按周推进） |
 | `docs/技术介绍.md` | 技术科普（OpenVINO / PaddleOCR-VL） |
 | `docs/差异化分析.md` | 与现有 notebooks 的差异论证 |
 | `docs/打卡记录.md` | 打卡任务 #1 提交记录 |
 | `assets/` | 截图（打卡运行结果） |
+| `qnn/` | **高通 QNN 赛题完整代码和文档** |
+| `qnn/README.md` | QNN 赛题说明 |
+| `qnn/docs/模型转换指南.md` | Paddle → ONNX → QNN 全链路文档 |
+| `qnn/scripts/` | 转换/量化/评测脚本 |
+| `qnn/src/` | 推理服务 + 文档解析 Pipeline |

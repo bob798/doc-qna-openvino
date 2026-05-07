@@ -1,0 +1,19 @@
+# PaddleOCR-VL QNN 部署依赖
+
+# 模型转换
+paddlepaddle>=2.6.0
+paddleocr>=2.9.0
+paddle2onnx>=1.2.0
+onnx>=1.14.0
+
+# 推理与数据处理
+numpy>=1.24.0
+Pillow>=10.0.0
+
+# VL 模型 HuggingFace 导出 (路径 B, 可选)
+# transformers>=4.40.0
+# torch>=2.0.0
+# optimum>=1.19.0
+
+# 评测
+# matplotlib>=3.7.0  # 可视化 (可选)

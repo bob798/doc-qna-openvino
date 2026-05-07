@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# 模型文件（体积大，不入库）
+models/
+*.onnx
+*.pdmodel
+*.pdiparams
+*.bin
+*.so
+*.dlc
+*_ctx.bin
+
+# QNN SDK（手动下载挂载）
+qnn-sdk/
+
+# 校准数据和中间产物
+data/calibration/
+data/calibration_images/
+*.raw
+
+# 评测结果（每次实测生成）
+results/
+reports/*.json
+
+# Docker
+.docker/
