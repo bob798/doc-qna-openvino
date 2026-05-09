@@ -40,8 +40,36 @@ class PreprocessResult:
         return len(self.pages)
 
 
+def _table_to_markdown(rows: list) -> str:
+    """pdfplumber Table.extract() rows → Markdown 管道表格"""
+    rows = [r for r in rows if r and any(c is not None and str(c).strip() for c in r)]
+    if not rows:
+        return ""
+    n_cols = max(len(r) for r in rows)
+
+    def cell(c) -> str:
+        s = "" if c is None else str(c)
+        return s.strip().replace("|", "\\|").replace("\n", " ").replace("\r", " ")
+
+    def row_md(r: list) -> str:
+        cells = [cell(x) for x in r] + [""] * (n_cols - len(r))
+        return "| " + " | ".join(cells[:n_cols]) + " |"
+
+    out = [row_md(rows[0]), "| " + " | ".join(["---"] * n_cols) + " |"]
+    for r in rows[1:]:
+        out.append(row_md(r))
+    return "\n".join(out)
+
+
 def _extract_text_pages(pdf_path: Path) -> List[Optional[str]]:
-    """对每页尝试抽取文字层。失败的页返回 None。"""
+    """对每页尝试抽取文字层；附加 pdfplumber 表格识别结果（Markdown 表格）。
+
+    pdfplumber 的 page.extract_text() 把表格也吐成"型号 功率 ... A100 300W ..."这种
+    平铺文字，下游切片器无法识别表头/行结构。这里在 extract_text() 之上再调用
+    extract_tables() 把每个表格转成 Markdown 管道表格，附在该页文字末尾，让
+    chunker.py 的表格感知逻辑能命中。会带来少量重复文本，下一版可改成按 bbox
+    剔除表格区文字以去重。
+    """
     try:
         import pdfplumber
     except ImportError as e:
@@ -55,6 +83,14 @@ def _extract_text_pages(pdf_path: Path) -> List[Optional[str]]:
             except Exception as e:
                 logger.warning(f"  page {page.page_number} extract_text 失败: {e}")
                 txt = ""
+            try:
+                tables = page.extract_tables() or []
+            except Exception as e:
+                logger.warning(f"  page {page.page_number} extract_tables 失败: {e}")
+                tables = []
+            md_tables = [m for m in (_table_to_markdown(t) for t in tables) if m]
+            if md_tables:
+                txt = txt.rstrip() + "\n\n" + "\n\n".join(md_tables)
             pages.append(txt)
     return pages
 
