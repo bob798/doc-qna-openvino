@@ -1,11 +1,27 @@
 .DS_Store
 .omc/
 .obsidian/
+.claude/
 
-# QNN SDK（1.4G，不入库）
-*.zip
-qnn/qnn-sdk/
-qnn/models/
-qnn/data/calibration/
-qnn/results/
-qnn/reports/*.json
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+
+# OpenVINO IR / 模型权重（不入库）
+openvino/models/
+
+# PDF 渲染缓存
+openvino/data/test_documents/*.cache/
+openvino/data/**/*.cache/
+
+# Benchmark / pipeline 产出（脚本运行后生成）
+openvino/results/phase1/benchmark_inference.*
+openvino/results/phase1/quality_compare*
+openvino/results/phase2/*.markdown
+openvino/results/phase2/*.chunks.jsonl
+openvino/results/phase2/*.summary.json
+openvino/results/phase2/phase2_overview.json

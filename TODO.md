@@ -46,8 +46,8 @@
 > 详细执行手册见 [`docs/开发手册.md`](docs/开发手册.md)
 > 截止日期：2026-06-05
 
-- [ ] **Phase 1 (Week 1)**: 环境搭建 + 模型验证 + 推理 Benchmark
-- [ ] **Phase 2 (Week 2)**: 文档解析 + 表格感知切片模块
+- [x] **Phase 1 (Week 1)**: 环境搭建 + 模型验证 + 推理 Benchmark — 代码完成，待跑通实测数据（见 `openvino/scripts/benchmark_inference.py` 和 `benchmark_ocr_quality.py`）
+- [x] **Phase 2 (Week 2)**: 文档解析 + 表格感知切片模块 — 代码完成（见 `openvino/src/{pdf_preprocessor,doc_parser,chunker,pipeline}.py`）
 - [ ] **Phase 3 (Week 3)**: RAG 问答链路（Embedding + ChromaDB + LLM）
 - [ ] **Phase 4 (Week 4)**: Tesseract vs PaddleOCR-VL 对比评测 + 优化
 - [ ] **Phase 5 (Week 5)**: 整理 Notebook + README + requirements + 提交
@@ -65,32 +65,14 @@
 
 ---
 
-## 高通赛题｜基于 QNN 部署 PaddleOCR-VL 模型
+## 关联仓库
 
-> 技术标签：PaddleOCR-VL，高通 QNN SDK，Hexagon NPU，Paddle2ONNX
-> 截止日期：2026-06-05
+> 本仓库 `doc-qna-openvino` 仅承载 OpenVINO 路径（进阶任务 #13）。其他赛题 / 提交材料已拆分到独立仓库：
 
-### 提交内容
-
-- [x] 模型转换脚本（Paddle → ONNX → QNN 全链路）
-- [x] 转换说明文档
-- [x] 端侧推理服务代码
-- [x] 文档解析 pipeline 代码（参考 doc_parser）
-- [x] 精度对比评测脚本
-- [x] 性能测试脚本
-- [x] Dockerfile + docker-compose
-
-### 验证阶段（待 SDK 就绪后执行）
-
-- [ ] Docker 环境构建成功
-- [ ] 布局检测模型：Paddle → ONNX → QNN 转换跑通
-- [ ] VL 模型：ONNX 导出成功（验证算子兼容性）
-- [ ] VL 模型：QNN 转换成功
-- [ ] HTP-simulator 上推理可运行
-- [ ] 精度损失 ≤ 5%
-- [ ] 性能报告填充实测数据
-
-> 代码目录：[`qnn/`](qnn/)
+| 内容 | 仓库 |
+|------|------|
+| 高通赛题（基于 QNN 部署 PaddleOCR-VL） | https://github.com/bob798/paddleocr-vl-qnn |
+| 进阶任务 #26 小伴（提交材料） | https://github.com/bob798/xiaoban（`submission/` 子目录）|
 
 ---
 
@@ -100,12 +82,14 @@
 |------|------|
 | `docs/进阶方案.md` | 已提交的进阶任务方案（OpenVINO） |
 | `docs/开发手册.md` | Phase 1-5 执行手册（按周推进） |
+| `docs/项目计划.md` | 对齐 6/5 截止日期的项目开发计划 |
 | `docs/技术介绍.md` | 技术科普（OpenVINO / PaddleOCR-VL） |
 | `docs/差异化分析.md` | 与现有 notebooks 的差异论证 |
 | `docs/打卡记录.md` | 打卡任务 #1 提交记录 |
+| `docs/周报/` | 每周周报存档 |
 | `assets/` | 截图（打卡运行结果） |
-| `qnn/` | **高通 QNN 赛题完整代码和文档** |
-| `qnn/README.md` | QNN 赛题说明 |
-| `qnn/docs/模型转换指南.md` | Paddle → ONNX → QNN 全链路文档 |
-| `qnn/scripts/` | 转换/量化/评测脚本 |
-| `qnn/src/` | 推理服务 + 文档解析 Pipeline |
+| `openvino/README.md` | Phase 1+2 运行指南 |
+| `openvino/scripts/benchmark_inference.py` | PyTorch vs OpenVINO 速度 Benchmark |
+| `openvino/scripts/benchmark_ocr_quality.py` | Tesseract vs PaddleOCR-VL 质量对比 |
+| `openvino/scripts/run_phase2_pipeline.py` | PDF → 解析 → 表格感知切片 CLI |
+| `openvino/src/` | 共享推理封装 + 解析 + 切片模块 |

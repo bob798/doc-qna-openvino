@@ -1,0 +1,18 @@
+{
+  "paddleocr_vl_openvino": {
+    "ir_dir": "./models/paddleocr_vl_ov",
+    "device": "CPU",
+    "max_new_tokens": 2048,
+    "comment": "OpenVINO IR 目录，由 paddleocr_vl notebook 转换流程生成"
+  },
+  "paddleocr_vl_pytorch": {
+    "hf_repo": "PaddlePaddle/PaddleOCR-VL",
+    "device": "cpu",
+    "comment": "用于 Benchmark 1 速度对比"
+  },
+  "tesseract": {
+    "lang": "chi_sim+eng",
+    "psm": 3,
+    "comment": "Tesseract 基线，需要安装 tesseract 二进制和中文语言包"
+  }
+}
