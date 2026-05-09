@@ -3,11 +3,12 @@
 
 策略：
   1. 解析 ParsedDocument 的每页 Markdown
-  2. 识别 Markdown 表格块（连续 `| ... |` 行 + 至少一行分隔符 `|---|---|`）
-  3. 表格切片：表头 + 单行 → 一个 chunk（保留列名上下文）
-  4. 非表格切片：按二级标题 / 段落分组，单个 chunk 控制在 [MIN_CHUNK, MAX_CHUNK] 字符范围
+  2. 预处理：把 HTML <table> 块转成 Markdown 管道表格（PaddleOCR-VL 默认输出 HTML）
+  3. 识别 Markdown 表格块（连续 `| ... |` 行 + 至少一行分隔符 `|---|---|`）
+  4. 表格切片：表头 + 单行 → 一个 chunk（保留列名上下文）
+  5. 非表格切片：按二级标题 / 段落分组，单个 chunk 控制在 [MIN_CHUNK, MAX_CHUNK] 字符范围
      超长段落做二次切分，保留 OVERLAP 字符重叠
-  5. 元数据：{doc_name, page, section_title, kind: "text"|"table"|"table_header"}
+  6. 元数据：{doc_name, page, section_title, kind: "text"|"table"|"table_header"}
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import asdict, dataclass, field
+from html.parser import HTMLParser
 from typing import Iterable, List, Optional
 
 from .doc_parser import ParsedDocument, ParsedPage
@@ -28,6 +30,98 @@ OVERLAP = 50
 TABLE_LINE_RE = re.compile(r"^\s*\|.*\|\s*$")
 TABLE_SEP_RE = re.compile(r"^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$")
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.+)$")
+HTML_TABLE_RE = re.compile(r"<table\b[^>]*>.*?</table>", re.DOTALL | re.IGNORECASE)
+
+
+# ── HTML 表格 → Markdown 表格预处理 ──────────────────────────────────────────
+
+
+class _HTMLTableToRows(HTMLParser):
+    """把单个 <table>...</table> 解析为 rows: List[List[(text, is_header)]]"""
+
+    def __init__(self):
+        super().__init__()
+        self.rows: List[List[tuple[str, bool]]] = []
+        self._row: Optional[List[tuple[str, bool]]] = None
+        self._cell: Optional[List[str]] = None
+        self._cell_is_header = False
+
+    def handle_starttag(self, tag, attrs):
+        tag = tag.lower()
+        if tag == "tr":
+            self._row = []
+        elif tag in ("td", "th") and self._row is not None:
+            self._cell = []
+            self._cell_is_header = tag == "th"
+        elif tag == "br" and self._cell is not None:
+            self._cell.append(" ")
+
+    def handle_endtag(self, tag):
+        tag = tag.lower()
+        if tag == "tr" and self._row is not None:
+            if self._row:
+                self.rows.append(self._row)
+            self._row = None
+        elif tag in ("td", "th") and self._cell is not None and self._row is not None:
+            text = "".join(self._cell).strip()
+            text = text.replace("|", "\\|").replace("\n", " ").replace("\r", " ")
+            text = re.sub(r"\s+", " ", text)
+            self._row.append((text, self._cell_is_header))
+            self._cell = None
+
+    def handle_data(self, data):
+        if self._cell is not None:
+            self._cell.append(data)
+
+
+def _html_table_to_markdown(html: str) -> str:
+    parser = _HTMLTableToRows()
+    try:
+        parser.feed(html)
+        parser.close()
+    except Exception as e:
+        logger.warning("HTML 表格解析失败，保留原文: %s", e)
+        return html
+
+    rows = parser.rows
+    if not rows:
+        return html
+
+    # 确定列数：取最大 cell 数
+    n_cols = max(len(r) for r in rows)
+    if n_cols == 0:
+        return html
+
+    def pad(cells: List[tuple[str, bool]]) -> List[str]:
+        out = [c[0] for c in cells]
+        while len(out) < n_cols:
+            out.append("")
+        return out[:n_cols]
+
+    # 找表头：首个全 <th> 行；否则把首行当表头
+    header_idx = 0
+    for i, r in enumerate(rows):
+        if r and all(c[1] for c in r):
+            header_idx = i
+            break
+
+    header = pad(rows[header_idx])
+    body_rows = [pad(r) for j, r in enumerate(rows) if j != header_idx]
+
+    md_lines = ["| " + " | ".join(header) + " |"]
+    md_lines.append("| " + " | ".join(["---"] * n_cols) + " |")
+    for r in body_rows:
+        md_lines.append("| " + " | ".join(r) + " |")
+    return "\n".join(md_lines)
+
+
+def _normalize_html_tables(md: str) -> str:
+    """把 markdown 文本里的 <table> 块就地替换为 Markdown 管道表格，前后留空行"""
+
+    def _sub(match: re.Match) -> str:
+        return "\n\n" + _html_table_to_markdown(match.group(0)) + "\n\n"
+
+    return HTML_TABLE_RE.sub(_sub, md)
 
 
 @dataclass
@@ -144,6 +238,7 @@ def chunk_page(page: ParsedPage, doc_name: str) -> List[Chunk]:
     if not md.strip():
         return []
 
+    md = _normalize_html_tables(md)
     lines = md.split("\n")
     table_spans = _detect_table_blocks(lines)
     table_idx_set = set()
