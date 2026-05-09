@@ -112,6 +112,7 @@ python scripts/run_phase2_pipeline.py --pdf_dir data/test_documents --out result
 | 周次 | 时间窗口 | PR | 本地存档 |
 |------|----------|----|----------|
 | W1 | 2026.04.25 ~ 2026.05.08 | [#598](https://github.com/PFCCLab/Camp/pull/598) | [`docs/周报/W1_2026-05-08.md`](docs/周报/W1_2026-05-08.md) |
+| W2 | 2026.05.09 ~ 2026.05.15 | _草稿_ | [`docs/周报/W2_2026-05-15.md`](docs/周报/W2_2026-05-15.md) |
 
 ---
 
