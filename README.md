@@ -28,7 +28,7 @@ PDF / 图片
 [ Embedding + 检索 ]  BGE-small (OpenVINO) → ChromaDB
    │
    ▼
-[ LLM 生成 ]        Qwen2.5 INT4 (OpenVINO GenAI) → 带来源引用的回答
+[ LLM 生成 ]        Qwen3 INT4 (OpenVINO GenAI) → 带来源引用的回答
 ```
 
 ---

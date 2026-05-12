@@ -160,7 +160,7 @@ python scripts/run_phase2_pipeline.py --pdf_dir data/test_documents --out result
 
 ## 后续 Phase（W3+）
 
-- **W3 (Phase 3)**：BGE-small embedding + ChromaDB 入库 + Qwen2.5 INT4 问答
+- **W3 (Phase 3)**：BGE-small embedding + ChromaDB 入库 + Qwen3-1.7B INT4 问答
 - **W4 (Phase 4)**：Tesseract 全链路 vs PaddleOCR-VL 全链路对比评测
 - **W5 (Phase 5)**：Notebook 整理 + 提交
 

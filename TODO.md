@@ -52,12 +52,22 @@
 - [ ] **Phase 4 (Week 4)**: Tesseract vs PaddleOCR-VL 对比评测 + 优化
 - [ ] **Phase 5 (Week 5)**: 整理 Notebook + README + requirements + 提交
 
+### Phase 3 启动前的收尾（今晚）
+
+> 来自 W2 周报 §3 "风险与待办（非阻塞）" + 5/15 截止事项。所有项都不阻塞 Phase 3.1，可平行做。
+
+- [ ] **W2 周报定稿提交** PFCCLab/Camp PR（截止 2026-05-15）—— `docs/周报/W2_2026-05-15.md`
+- [ ] **`docs/进阶方案.md` 占位话术替换**：用 Phase 1 实测数据替换 "≥ 2×"、"显著优于传统 OCR"（数据源 `openvino/results/phase1/benchmark_inference.md`、`quality_compare.md`）
+- [ ] **PyTorch baseline 补跑**：验 transformers 4.54 + trust_remote_code 兼容性，补 Benchmark 1 加速比对照
+- [ ] **修 pdfplumber 表格 section 元数据**：按 bbox 排序合并，避免表格 chunk `section_title` 跟随页末标题（Phase 4 评测前必须）
+- [ ] **`scanned.pdf` 漏识别复测**：等真实业务样本到位后跑 OCR 路径（可推到 Phase 4，与上一项一起做）
+
 ### 周报
 
 > 在 [PFCCLab/Camp](https://github.com/PFCCLab/Camp/pull/584) 提交周报
 > 目录：`WeeklyReports/Hackathon_10th/ERNIEPartner/`
 
-- [ ] Week 1 周报
+- [x] Week 1 周报（已提交 [PFCCLab/Camp #598](https://github.com/PFCCLab/Camp/pull/598)）
 - [ ] Week 2 周报
 - [ ] Week 3 周报
 - [ ] Week 4 周报
