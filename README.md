@@ -38,7 +38,7 @@ PDF / 图片
 ```
 doc-qna-openvino/
 ├── README.md                  本文档
-├── TODO.md                    任务清单 + 关联仓库索引
+├── TODO.md                    任务清单 + 文件索引
 ├── docs/                      项目文档
 │   ├── 进阶方案.md            已提交并通过的 RFC 方案
 │   ├── 项目计划.md            按 Phase 1~5 拆周推进
@@ -91,17 +91,6 @@ python scripts/run_phase2_pipeline.py --pdf_dir data/test_documents --out result
 | 5 | 整理 Notebook + README + requirements + 提交 | ⬜ 未开始 |
 
 完整时间表见 [`docs/项目计划.md`](docs/项目计划.md)。
-
----
-
-## 关联仓库
-
-> 本仓库 `doc-qna-openvino` 仅承载 OpenVINO 路径（进阶任务 #13）。其他赛题 / 提交材料拆分到独立仓库：
-
-| 内容 | 仓库 |
-|------|------|
-| 高通赛题（基于 QNN 部署 PaddleOCR-VL） | [`bob798/paddleocr-vl-qnn`](https://github.com/bob798/paddleocr-vl-qnn) |
-| 进阶任务 #26 小伴（提交材料） | [`bob798/xiaoban`](https://github.com/bob798/xiaoban)（`submission/` 子目录）|
 
 ---
 

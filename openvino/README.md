@@ -147,17 +147,6 @@ python scripts/run_phase2_pipeline.py --pdf_dir data/test_documents --out result
 
 ---
 
-## 关联仓库
-
-| 仓库 | 推理路径 | 用途 |
-|------|----------|------|
-| 本仓库 `doc-qna-openvino` | OpenVINO Runtime / GenAI · CPU/GPU/NPU | 进阶任务 #13 |
-| [`bob798/paddleocr-vl-qnn`](https://github.com/bob798/paddleocr-vl-qnn) | 高通 QNN SDK · Hexagon NPU 端侧 | 高通赛题（已拆分到独立仓库）|
-
-两者共享文档解析的整体思路（PaddleOCR-VL → Markdown → 表格感知切片），但推理后端、量化策略、依赖完全独立。
-
----
-
 ## 后续 Phase（W3+）
 
 - **W3 (Phase 3)**：BGE-small embedding + ChromaDB 入库 + Qwen3-1.7B INT4 问答

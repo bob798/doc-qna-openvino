@@ -25,3 +25,8 @@ openvino/results/phase2/*.markdown
 openvino/results/phase2/*.chunks.jsonl
 openvino/results/phase2/*.summary.json
 openvino/results/phase2/phase2_overview.json
+
+# Phase 3/4 评测材料（公开但体量大，不入库；manifest.json 跟踪）
+openvino/data/eval_documents/*.pdf
+openvino/data/omnidocbench/
+openvino/results/omnidocbench/
