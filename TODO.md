@@ -133,7 +133,7 @@ cd Camp
 > 目录：`WeeklyReports/Hackathon_10th/ERNIEPartner/`
 
 - [x] Week 1 周报（已提交 [PFCCLab/Camp #598](https://github.com/PFCCLab/Camp/pull/598)）
-- [ ] Week 2 周报
+- [x] Week 2 周报（已提交 [PFCCLab/Camp #609](https://github.com/PFCCLab/Camp/pull/609)）
 - [ ] Week 3 周报
 - [ ] Week 4 周报
 - [ ] Week 5 周报
