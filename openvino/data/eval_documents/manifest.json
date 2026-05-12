@@ -1,45 +1,45 @@
 {
   "direct_pdfs": {
-    "paddleocr_vl_paper": "data/eval_documents/paddleocr_vl_2510.14528.pdf",
-    "paddleocr_vl_15_paper": "data/eval_documents/paddleocr_vl_15_2601.21957.pdf",
-    "h100_pcie_pb": "data/eval_documents/h100_pcie_PB-11133-001.pdf",
-    "h100_nvl_pb": "data/eval_documents/h100_nvl_PB-11773-001.pdf",
-    "xiaomi_band9_manual": "data/eval_documents/xiaomi_band9_user_manual.pdf"
+    "paddleocr_vl_paper": "data\\eval_documents\\paddleocr_vl_2510.14528.pdf",
+    "paddleocr_vl_15_paper": "data\\eval_documents\\paddleocr_vl_15_2601.21957.pdf",
+    "h100_pcie_pb": "data\\eval_documents\\h100_pcie_PB-11133-001.pdf",
+    "h100_nvl_pb": "data\\eval_documents\\h100_nvl_PB-11773-001.pdf",
+    "xiaomi_band9_manual": "data\\eval_documents\\xiaomi_band9_user_manual.pdf"
   },
   "omnidocbench": {
-    "annotation": "data/omnidocbench/OmniDocBench.json",
+    "annotation": "data\\omnidocbench\\OmniDocBench.json",
     "samples": [
-      "data/omnidocbench/images/page-29ccb4ce-9266-4938-8f2d-b2b69ceb43cd.png",
-      "data/omnidocbench/images/scihub_s12935-018-0683-z.pdf_0.jpg",
-      "data/omnidocbench/images/color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第10讲第十课写作Part9小作文练习_第十课写作Part9小作文练习_page_010.png",
-      "data/omnidocbench/images/PPT_EnglishtoAmericanTransition_page_017.png",
-      "data/omnidocbench/images/page-349417c3-e5f4-4dae-b018-7323ef36b04e.png",
-      "data/omnidocbench/images/yanbaor2_yanbaoPPT_5846.jpg",
-      "data/omnidocbench/images/docstructbench_llm-raw-scihub-o.O-j.ab.2007.10.021.pdf_3.jpg",
-      "data/omnidocbench/images/docstructbench_llm-raw-the-eye-o.O-Dragon%20Magazine%20-%20030.pdf_5.jpg",
-      "data/omnidocbench/images/newspaper_c3c88b76543e2caf044c9f7689f23ec9_1.jpg",
-      "data/omnidocbench/images/page-a32698bb-e3ae-49bc-b3af-203fb77b2bdf.png",
-      "data/omnidocbench/images/exam_paper_2004-2019上海高考英语听力原文和答案_page_002.png",
-      "data/omnidocbench/images/page-99c0fd2f-608e-479c-9af5-5b012de4f6af.png",
-      "data/omnidocbench/images/notes_1ba14cb325bc448f7201b20502ecf2b5_55.jpg",
-      "data/omnidocbench/images/yanbaopptmerge_yanbaoPPT_5350.jpg",
-      "data/omnidocbench/images/PPT_1637904769_page_001.png",
-      "data/omnidocbench/images/yanbaopptmerge_yanbaoPPT_1015.jpg",
-      "data/omnidocbench/images/jiaocaineedrop_jiaocai_needrop_en_1175.jpg",
-      "data/omnidocbench/images/page-232d386f-6c9d-4b50-9463-89dedce995e5.png",
-      "data/omnidocbench/images/page-3ecc67a1-9b19-4fb9-b74d-acbb73db5c53.png",
-      "data/omnidocbench/images/jiaocaineedrop_jiaocai_needrop_en_443.jpg"
+      "data\\omnidocbench\\images\\page-29ccb4ce-9266-4938-8f2d-b2b69ceb43cd.png",
+      "data\\omnidocbench\\images\\scihub_s12935-018-0683-z.pdf_0.jpg",
+      "data\\omnidocbench\\images\\color_textbook_zhonggaokao_小学_KET听说读写逐项突破_KET听说读写逐项突破之轻松搞定KET写作25分 【10讲 褚连一】_第10讲第十课写作Part9小作文练习_第十课写作Part9小作文练习_page_010.png",
+      "data\\omnidocbench\\images\\PPT_EnglishtoAmericanTransition_page_017.png",
+      "data\\omnidocbench\\images\\page-349417c3-e5f4-4dae-b018-7323ef36b04e.png",
+      "data\\omnidocbench\\images\\yanbaor2_yanbaoPPT_5846.jpg",
+      "data\\omnidocbench\\images\\docstructbench_llm-raw-scihub-o.O-j.ab.2007.10.021.pdf_3.jpg",
+      "data\\omnidocbench\\images\\docstructbench_llm-raw-the-eye-o.O-Dragon%20Magazine%20-%20030.pdf_5.jpg",
+      "data\\omnidocbench\\images\\newspaper_c3c88b76543e2caf044c9f7689f23ec9_1.jpg",
+      "data\\omnidocbench\\images\\page-a32698bb-e3ae-49bc-b3af-203fb77b2bdf.png",
+      "data\\omnidocbench\\images\\exam_paper_2004-2019上海高考英语听力原文和答案_page_002.png",
+      "data\\omnidocbench\\images\\page-99c0fd2f-608e-479c-9af5-5b012de4f6af.png",
+      "data\\omnidocbench\\images\\notes_1ba14cb325bc448f7201b20502ecf2b5_55.jpg",
+      "data\\omnidocbench\\images\\yanbaopptmerge_yanbaoPPT_5350.jpg",
+      "data\\omnidocbench\\images\\PPT_1637904769_page_001.png",
+      "data\\omnidocbench\\images\\yanbaopptmerge_yanbaoPPT_1015.jpg",
+      "data\\omnidocbench\\images\\jiaocaineedrop_jiaocai_needrop_en_1175.jpg",
+      "data\\omnidocbench\\images\\page-232d386f-6c9d-4b50-9463-89dedce995e5.png",
+      "data\\omnidocbench\\images\\page-3ecc67a1-9b19-4fb9-b74d-acbb73db5c53.png",
+      "data\\omnidocbench\\images\\jiaocaineedrop_jiaocai_needrop_en_443.jpg"
     ]
   },
   "manual": [
     {
-      "id": "kunlunxin_product_brief",
-      "filename": "kunlunxin_product_brief.pdf",
+      "id": "K100_K200_spec",
+      "filename": "K100_K200_spec.pdf",
       "url": "https://www.paddlepaddle.org.cn/documentation/docs/zh/hardware_support/xpu/xpu-p800_install_cn.html",
       "site": "https://www.kunlunxin.com/",
-      "note": "昆仑芯 Product Brief（实际为 K100/K200 一代）- 主题贴合文心赛道。官方无公开 P800 datasheet，可在浏览器打开上面 PaddlePaddle XPU-P800 文档 → 打印为 PDF。当前样本是手工拿到的 K100/K200 PB，功能上等价（中文规格 + 表格），保存为 kunlunxin_product_brief.pdf",
+      "note": "昆仑芯 K100/K200 Product Brief - 主题贴合文心赛道。官方无公开 P800 datasheet，可在浏览器打开上面 PaddlePaddle XPU-P800 文档 → 打印为 PDF。当前样本是手工拿到的 K100/K200 PB，功能上等价（中文规格 + 表格），保存为 K100_K200_spec.pdf",
       "present": true,
-      "local_path": "data/eval_documents/kunlunxin_product_brief.pdf"
+      "local_path": "data\\eval_documents\\K100_K200_spec.pdf"
     },
     {
       "id": "gb_t_2423_1",
@@ -48,7 +48,7 @@
       "site": "https://openstd.samr.gov.cn/bzgk/gb/",
       "note": "GB/T 2423.1-2008 环境试验 - 扫描+文字层混合，补 scanned 路径证据。浏览器打开上面 URL，点页面 \"PDF\" 按钮下载（cookie 鉴权，命令行不行），保存为 gb_t_2423_1.pdf",
       "present": true,
-      "local_path": "data/eval_documents/gb_t_2423_1.pdf"
+      "local_path": "data\\eval_documents\\gb_t_2423_1.pdf"
     }
   ]
 }

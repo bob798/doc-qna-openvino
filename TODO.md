@@ -122,7 +122,7 @@ cd Camp
 - [x] `scripts/download_eval_materials.py` 自动下载脚本（5 份直链 + OmniDocBench 子集）
 - [x] `scripts/run_omnidocbench_subset.py` OmniDocBench 子集对比骨架
 - [x] **人工下载 2 份中文材料**（脚本检测到位后自动打勾，见 `manifest.json` 的 `manual[].present`）
-  - [x] 昆仑芯 Product Brief → `kunlunxin_product_brief.pdf` (204 KB)（实际为 K100/K200 一代 PB；官方无公开 P800 datasheet，功能等价用于评测）
+  - [x] 昆仑芯 Product Brief → `K100_K200_spec.pdf` (204 KB)（实际为 K100/K200 一代 PB；官方无公开 P800 datasheet，功能等价用于评测）
   - [x] [GB/T 2423.1-2008](https://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno=4B30041DEFB4D9283C1DC9592735F67E) → `gb_t_2423_1.pdf` (834 KB)
 - [ ] `eval_questions.jsonl` 扩到 30~50 题（Phase 3.3 跑通端到端后再扩，避免无效题）
 - [ ] 接入 RAGAS（`pip install ragas`，Phase 3.3 端到端跑通后）

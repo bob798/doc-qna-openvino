@@ -265,7 +265,19 @@ class PyTorchPaddleOCRVL:
             image_path = ""
             pil = image
 
-        inputs = self.processor(images=pil, text=prompt, return_tensors="pt").to(self.device)
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image"},
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        ]
+        text_in = self.processor.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        inputs = self.processor(images=pil, text=text_in, return_tensors="pt").to(self.device)
 
         t0 = time.perf_counter()
         with torch.inference_mode():

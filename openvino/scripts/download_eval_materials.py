@@ -81,11 +81,11 @@ DIRECT_PDFS = [
 
 MANUAL_DOCS = [
     {
-        "id": "kunlunxin_product_brief",
-        "filename": "kunlunxin_product_brief.pdf",
+        "id": "K100_K200_spec",
+        "filename": "K100_K200_spec.pdf",
         "url": "https://www.paddlepaddle.org.cn/documentation/docs/zh/hardware_support/xpu/xpu-p800_install_cn.html",
         "site": "https://www.kunlunxin.com/",
-        "note": "昆仑芯 Product Brief（实际为 K100/K200 一代）- 主题贴合文心赛道。官方无公开 P800 datasheet，可在浏览器打开上面 PaddlePaddle XPU-P800 文档 → 打印为 PDF。当前样本是手工拿到的 K100/K200 PB，功能上等价（中文规格 + 表格），保存为 kunlunxin_product_brief.pdf",
+        "note": "昆仑芯 K100/K200 Product Brief - 主题贴合文心赛道。官方无公开 P800 datasheet，可在浏览器打开上面 PaddlePaddle XPU-P800 文档 → 打印为 PDF。当前样本是手工拿到的 K100/K200 PB，功能上等价（中文规格 + 表格），保存为 K100_K200_spec.pdf",
     },
     {
         "id": "gb_t_2423_1",
