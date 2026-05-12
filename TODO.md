@@ -52,15 +52,68 @@
 - [ ] **Phase 4 (Week 4)**: Tesseract vs PaddleOCR-VL 对比评测 + 优化
 - [ ] **Phase 5 (Week 5)**: 整理 Notebook + README + requirements + 提交
 
-### Phase 3 启动前的收尾（今晚）
+### 今晚 Windows 执行清单（按顺序）
 
-> 来自 W2 周报 §3 "风险与待办（非阻塞）" + 5/15 截止事项。所有项都不阻塞 Phase 3.1，可平行做。
+> 5/15 是 W2 周报硬截止。`git pull` 拉今天 3 个 commit 后按下方顺序跑。
 
-- [ ] **W2 周报定稿提交** PFCCLab/Camp PR（截止 2026-05-15）—— `docs/周报/W2_2026-05-15.md`
-- [ ] **`docs/进阶方案.md` 占位话术替换**：用 Phase 1 实测数据替换 "≥ 2×"、"显著优于传统 OCR"（数据源 `openvino/results/phase1/benchmark_inference.md`、`quality_compare.md`）
-- [ ] **PyTorch baseline 补跑**：验 transformers 4.54 + trust_remote_code 兼容性，补 Benchmark 1 加速比对照
-- [ ] **修 pdfplumber 表格 section 元数据**：按 bbox 排序合并，避免表格 chunk `section_title` 跟随页末标题（Phase 4 评测前必须）
-- [ ] **`scanned.pdf` 漏识别复测**：等真实业务样本到位后跑 OCR 路径（可推到 Phase 4，与上一项一起做）
+**0. 同步代码 + 装依赖**（≈ 3 min）
+
+```powershell
+git pull
+python -m pip install --user -r openvino\requirements.txt
+```
+
+**1. 验证 pdfplumber bbox 修复**（≈ 1 min · 代码已修，跑一遍冒烟）
+
+```powershell
+cd openvino
+python scripts\run_phase2_pipeline.py --pdf data\test_documents\spec_with_tables.pdf --out results\phase2
+# 期望：spec_with_tables.chunks.jsonl 里表格行的 section_title=主要参数（不再是页末"故障代码"）
+```
+
+**2. 拉新评测材料 + OmniDocBench 子集**（≈ 5 min · 网络）
+
+```powershell
+python scripts\download_eval_materials.py --omnidoc-samples 20
+# 期望：data\eval_documents\ 下 5 PDF + manifest.json，data\omnidocbench\ 下标注 + 20 张图
+```
+
+**3. PyTorch baseline 补跑**（≈ 30~60 min · CPU 慢）
+
+```powershell
+python scripts\benchmark_inference.py --warmup 1 --runs 3
+# 期望：results\phase1\benchmark_inference.md 含 PyTorch 列 + 加速比；
+# 若 PyTorch 加载失败 → 看 stderr，必要时降 transformers 版本或加 trust_remote_code 调试
+```
+
+**4. 真实扫描件复测**（≈ 5 min · 接替原 `scanned.pdf`）
+
+```powershell
+python scripts\run_phase2_pipeline.py --pdf data\eval_documents\gb_t_2423_1.pdf --out results\phase2
+# 期望：OCR 路径吐出 ≥ 10 个 chunk（W1 合成图只有 1 个），证明真实样本下 PaddleOCR-VL 能拿到结构
+```
+
+**5. `docs/进阶方案.md` §五 占位话术替换**（≈ 10 min · 编辑）
+
+把 §五 性能指标表改成"预期 → 实测"两列对照，填入：
+- PaddleOCR-VL 加速比 → #3 跑完后的真实数字
+- 扫描件识别 → #4 真实样本结果（替换 "≥ 95%" 占位）
+- LLM 延迟 / 端到端响应 → 标记 "Phase 3 后填" 保留
+
+**6. W2 周报定稿提交**（≈ 15 min）
+
+周报草稿已加入 §1.4 Qwen3 升级 / §1.5 评测体系定稿 / §1.6 pdfplumber 修复。
+拿 #3 #4 的最新数据回填 §1.1 表格底部"PyTorch 对照"行后：
+
+```powershell
+# Fork PFCCLab/Camp，复制周报到 WeeklyReports/Hackathon_10th/ERNIEPartner/ERNIEPartner_13_bob798/
+gh repo fork PFCCLab/Camp --clone --remote
+cd Camp
+# 把 docs\周报\W2_2026-05-15.md 复制到目标目录
+# 提交 PR
+```
+
+完成后回来勾这 6 项 + 上面"评测体系准备"的 [ ] 项。
 
 ### 评测体系准备（Phase 3 → 4 过渡）
 

@@ -62,13 +62,16 @@ def _table_to_markdown(rows: list) -> str:
 
 
 def _extract_text_pages(pdf_path: Path) -> List[Optional[str]]:
-    """对每页尝试抽取文字层；附加 pdfplumber 表格识别结果（Markdown 表格）。
+    """对每页按 bbox 顺序交错抽取文字 + 表格。
 
-    pdfplumber 的 page.extract_text() 把表格也吐成"型号 功率 ... A100 300W ..."这种
-    平铺文字，下游切片器无法识别表头/行结构。这里在 extract_text() 之上再调用
-    extract_tables() 把每个表格转成 Markdown 管道表格，附在该页文字末尾，让
-    chunker.py 的表格感知逻辑能命中。会带来少量重复文本，下一版可改成按 bbox
-    剔除表格区文字以去重。
+    pdfplumber 的 `page.extract_text()` 把表格吐成"型号 功率 A100 300W ..."这种
+    平铺文字，下游切片器无法识别表头/行结构。这里改用 `find_tables()` 拿到表格
+    bbox，按 y 坐标排序后：
+
+      | 表格上方文字 | 表格 (Markdown) | 表格之间文字 | 表格 (Markdown) | ... | 末尾文字 |
+
+    这样表格在页内的位置正确，下游 chunker.py 给表格分配的 `section_title`
+    才会对应到它真正所属的章节，而不是页末的最后一个标题。
     """
     try:
         import pdfplumber
@@ -78,21 +81,59 @@ def _extract_text_pages(pdf_path: Path) -> List[Optional[str]]:
     pages: List[Optional[str]] = []
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
-            try:
-                txt = page.extract_text() or ""
-            except Exception as e:
-                logger.warning(f"  page {page.page_number} extract_text 失败: {e}")
-                txt = ""
-            try:
-                tables = page.extract_tables() or []
-            except Exception as e:
-                logger.warning(f"  page {page.page_number} extract_tables 失败: {e}")
-                tables = []
-            md_tables = [m for m in (_table_to_markdown(t) for t in tables) if m]
-            if md_tables:
-                txt = txt.rstrip() + "\n\n" + "\n\n".join(md_tables)
-            pages.append(txt)
+            pages.append(_extract_one_page(page))
     return pages
+
+
+def _extract_one_page(page) -> str:
+    """对单页：用 bbox 顺序拼接 [上方文本, 表格 md, ..., 末尾文本]。"""
+    try:
+        tables = page.find_tables() or []
+    except Exception as e:
+        logger.warning(f"  page {page.page_number} find_tables 失败: {e}")
+        tables = []
+
+    if not tables:
+        try:
+            return page.extract_text() or ""
+        except Exception as e:
+            logger.warning(f"  page {page.page_number} extract_text 失败: {e}")
+            return ""
+
+    tables = sorted(tables, key=lambda t: t.bbox[1])
+
+    def _crop_text(top: float, bottom: float) -> str:
+        if bottom - top < 1:
+            return ""
+        try:
+            cropped = page.crop((0, top, page.width, bottom))
+            return (cropped.extract_text() or "").rstrip()
+        except Exception as e:
+            logger.warning(f"  page {page.page_number} crop({top:.0f},{bottom:.0f}) 失败: {e}")
+            return ""
+
+    parts: List[str] = []
+    prev_y = 0.0
+    for tbl in tables:
+        x0, top, x1, bottom = tbl.bbox
+        above = _crop_text(prev_y, top)
+        if above.strip():
+            parts.append(above)
+        try:
+            rows = tbl.extract()
+        except Exception as e:
+            logger.warning(f"  page {page.page_number} table.extract 失败: {e}")
+            rows = []
+        md = _table_to_markdown(rows)
+        if md:
+            parts.append(md)
+        prev_y = bottom
+
+    tail = _crop_text(prev_y, page.height)
+    if tail.strip():
+        parts.append(tail)
+
+    return "\n\n".join(parts) if parts else (page.extract_text() or "")
 
 
 def _render_pages_to_images(
