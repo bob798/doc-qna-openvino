@@ -45,77 +45,48 @@
 
 > 详细执行手册见 [`docs/开发手册.md`](docs/开发手册.md)
 > 截止日期：2026-06-05
+> **2026-05-22 导师反馈方向校准**：5 周周期下停止扩展评测/功能，立刻收敛到端到端 Demo。详情见 [`docs/决策记录/2026-05-22_导师反馈方向校准.md`](docs/决策记录/2026-05-22_导师反馈方向校准.md)。
 
-- [x] **Phase 1 (Week 1)**: 环境搭建 + 模型验证 + 推理 Benchmark — 代码完成，待跑通实测数据（见 `openvino/scripts/benchmark_inference.py` 和 `benchmark_ocr_quality.py`）
-- [x] **Phase 2 (Week 2)**: 文档解析 + 表格感知切片模块 — 代码完成（见 `openvino/src/{pdf_preprocessor,doc_parser,chunker,pipeline}.py`）
-- [ ] **Phase 3 (Week 3)**: RAG 问答链路（Embedding + ChromaDB + LLM）
-- [ ] **Phase 4 (Week 4)**: Tesseract vs PaddleOCR-VL 对比评测 + 优化
-- [ ] **Phase 5 (Week 5)**: 整理 Notebook + README + requirements + 提交
+- [x] **Phase 1 (Week 1)**: 环境搭建 + 模型验证 + 推理 Benchmark — 实测数据落地（OV CPU/GPU 1.47×，PT baseline 弃测有书面说明）
+- [x] **Phase 2 (Week 2)**: 文档解析 + 表格感知切片模块 — 切片器 3 处真实漏洞修复 + GB/T 2423.1 14 页实测 87 chunks
+- [ ] **Phase 3 (Week 3 ← 现在)**: RAG 端到端最小闭环（端到端 Demo 主线，详见下方"W3 主线"）
+- [ ] **Phase 4 (Week 4)**: 必做对比 + 加分项（详见下方"W4 计划"）
+- [ ] **Phase 5 (Week 5)**: 演示视频 + README 终稿 + Notebook + PR 提交
 
-### 今晚 Windows 执行清单（按顺序）
+### W3 主线（2026-05-23 ~ 2026-06-05）— 必做 P0
 
-> 5/15 是 W2 周报硬截止。`git pull` 拉今天 3 个 commit 后按下方顺序跑。
+> 目标：交付一段可复现的端到端 Demo（运行命令 + 样例问题 + 检索结果 + 带 (doc,page) 引用的回答），W3 周报硬性要求展示完整跑通结果。
 
-**0. 同步代码 + 装依赖**（≈ 3 min）
+- [ ] **P0-1 Embedding + ChromaDB**：BGE-small-zh 转 OpenVINO IR（INT8）→ ChromaDB 持久化 → Phase 2 输出的 chunks.jsonl 灌入 → 人工验证 Top-K 召回相关性
+- [ ] **P0-2 LLM 生成**：`openvino_genai.LLMPipeline` 加载 `OpenVINO/Qwen3-1.7B-int4-ov`，RAG prompt 模板设计 + 输出带 (doc_name, page) 引用，`enable_thinking=False`
+- [ ] **P0-3 端到端 `scripts/run_qa.py`**：完整 PDF → 解析 → 入库 → 提问 → 答案，跑 **3~5 条业务问题**记录耗时分解（embed / retrieve / LLM）；带 1~2 份 PDF 输入即可
+- [ ] **P0-4 README/复现物料并行启动**：端到端通的当晚就回填运行命令、样例问题、终端截图、性能数据；不要拖到 W5
+- [ ] **P0-5 NPU 限制说明**：在 README/周报里一句话写清"当前 IR 含 PP-DocLayoutV3 算子，NPU 暂不支持完整 OCR 链路，主线用 CPU/GPU/AUTO"——**不要硬试 V3 NPU 浪费时间**
 
-```powershell
-git pull
-python -m pip install --user -r openvino\requirements.txt
-```
+### W3 必做评测（瘦身版）— P1
 
-**1. 验证 pdfplumber bbox 修复**（≈ 1 min · 代码已修，跑一遍冒烟）
+- [ ] **P1-1 业务问题集精简**：从 `eval_questions.jsonl` 18 题里挑 **3~5 题最能说明效果**的，端到端跑出回答 + 引用 + 耗时，作为 Demo 主证据
+- [ ] **P1-2 Tesseract vs PaddleOCR-VL 少量对比**：选 **2~3 个代表性页面**（含表格 + 中文 + 公式），人工或脚本对比识别质量，**不跑完整 OmniDocBench**
 
-```powershell
-cd openvino
-python scripts\run_phase2_pipeline.py --pdf data\test_documents\spec_with_tables.pdf --out results\phase2
-# 期望：spec_with_tables.chunks.jsonl 里表格行的 section_title=主要参数（不再是页末"故障代码"）
-```
+### W4 计划（2026-05-30 ~ 2026-06-05）
 
-**2. 拉新评测材料 + OmniDocBench 子集**（≈ 5 min · 网络）
+- [ ] **P0 演示视频/录屏**：terminal 跑通 + 回答带引用截图，2~3 分钟
+- [ ] **P0 README 终稿 + 依赖说明 + 模型准备**：确保 PR 可一键复现
+- [ ] **P0 提交 PR**（PFCCLab 仓库）
+- [ ] **加分（P2）NPU 进取路径**：把 Qwen3 LLM 或 BGE Embedding 切到 NPU 上跑（NPU 明确支持的 workload），讲"OCR-GPU / LLM-NPU / 检索-CPU"AI PC 全家桶叙事；**时间不够就直接砍**
 
-```powershell
-python scripts\download_eval_materials.py --omnidoc-samples 20
-# 期望：data\eval_documents\ 下 5 PDF + manifest.json，data\omnidocbench\ 下标注 + 20 张图
-```
+### 加分项 — P3（不阻塞主流程，时间盒严控）
 
-**3. PyTorch baseline 补跑**（≈ 30~60 min · CPU 慢）
+> 以下项 6/2 前主线没稳就完全砍掉，**主 Demo > 一切**。
 
-```powershell
-python scripts\benchmark_inference.py --warmup 1 --runs 3
-# 期望：results\phase1\benchmark_inference.md 含 PyTorch 列 + 加速比；
-# 若 PyTorch 加载失败 → 看 stderr，必要时降 transformers 版本或加 trust_remote_code 调试
-```
+- [ ] OmniDocBench 子集 20 张图跑 Edit Distance / TEDS / CDM
+- [ ] 接入 RAGAS（faithfulness / answer_relevancy / context_precision / context_recall）
+- [ ] `eval_questions.jsonl` 扩到 30~50 题
+- [ ] Gradio 演示 UI
 
-**4. 真实扫描件复测**（≈ 5 min · 接替原 `scanned.pdf`）
+### 评测体系准备（已就位 — 转入加分项后再用）
 
-```powershell
-python scripts\run_phase2_pipeline.py --pdf data\eval_documents\gb_t_2423_1.pdf --out results\phase2
-# 期望：OCR 路径吐出 ≥ 10 个 chunk（W1 合成图只有 1 个），证明真实样本下 PaddleOCR-VL 能拿到结构
-```
-
-**5. `docs/进阶方案.md` §五 占位话术替换**（≈ 10 min · 编辑）
-
-把 §五 性能指标表改成"预期 → 实测"两列对照，填入：
-- PaddleOCR-VL 加速比 → #3 跑完后的真实数字
-- 扫描件识别 → #4 真实样本结果（替换 "≥ 95%" 占位）
-- LLM 延迟 / 端到端响应 → 标记 "Phase 3 后填" 保留
-
-**6. W2 周报定稿提交**（≈ 15 min）
-
-周报草稿已加入 §1.4 Qwen3 升级 / §1.5 评测体系定稿 / §1.6 pdfplumber 修复。
-拿 #3 #4 的最新数据回填 §1.1 表格底部"PyTorch 对照"行后：
-
-```powershell
-# Fork PFCCLab/Camp，复制周报到 WeeklyReports/Hackathon_10th/ERNIEPartner/ERNIEPartner_13_bob798/
-gh repo fork PFCCLab/Camp --clone --remote
-cd Camp
-# 把 docs\周报\W2_2026-05-15.md 复制到目标目录
-# 提交 PR
-```
-
-完成后回来勾这 6 项 + 上面"评测体系准备"的 [ ] 项。
-
-### 评测体系准备（Phase 3 → 4 过渡）
+> 三层架构已设计 + 材料已就位，**但 W3 不主跑**。主 Demo 通后看时间从加分项里拣。
 
 - [x] 评测体系三层架构定稿（见 [`docs/进阶方案.md` §七](docs/进阶方案.md)）
 - [x] `eval_questions.jsonl` 骨架（18 题，5 类）+ schema 文档
@@ -124,8 +95,6 @@ cd Camp
 - [x] **人工下载 2 份中文材料**（脚本检测到位后自动打勾，见 `manifest.json` 的 `manual[].present`）
   - [x] 昆仑芯 Product Brief → `K100_K200_spec.pdf` (204 KB)（实际为 K100/K200 一代 PB；官方无公开 P800 datasheet，功能等价用于评测）
   - [x] [GB/T 2423.1-2008](https://openstd.samr.gov.cn/bzgk/gb/newGbInfo?hcno=4B30041DEFB4D9283C1DC9592735F67E) → `gb_t_2423_1.pdf` (834 KB)
-- [ ] `eval_questions.jsonl` 扩到 30~50 题（Phase 3.3 跑通端到端后再扩，避免无效题）
-- [ ] 接入 RAGAS（`pip install ragas`，Phase 3.3 端到端跑通后）
 
 ### 周报
 
