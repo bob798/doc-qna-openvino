@@ -316,7 +316,82 @@ q009 / q015 能成功是因为：q009 的答案 chunk 里同时含 "Total board 
 
 ---
 
-### 5. Phase 3 → P1-1 工程改进溢出（提取自实战）
+### 5. P1-2 Tesseract vs PaddleOCR-VL 少量页对比
+
+为支撑 Phase 3 OCR 路径选型，选 3 张代表性页面（同一份 PDF，避免风格差异引入
+噪声），分别覆盖"中文 + LaTeX 公式 / 中文长文档 / 中文 + 复杂表格"三种典型场景：
+
+| 文件 | 类型 | 来源 |
+|------|------|------|
+| `formula_gb2423_p05.png` | 中文 + LaTeX 公式 | GB/T 2423.1-2008 p.5（含 `$5\,K$`、`$0.5\,m/s$` 等行内公式） |
+| `text_gb2423_p07.png` | 纯中文长文 | GB/T 2423.1-2008 p.7（多级标题 + 段落） |
+| `table_gb2423_p14.png` | 中文 + HTML 表格 | GB/T 2423.1-2008 p.14（附录 NB 表 NB.1，含 rowspan/colspan） |
+
+运行命令（复用 Phase 1 已有 `benchmark_ocr_quality.py`）：
+
+```bash
+# Windows: 需要 Tesseract + chi_sim 语言包
+# 1) 安装 Tesseract for Windows（默认 C:\Program Files\Tesseract-OCR\）
+# 2) 下载 chi_sim.traineddata 放到任意可写目录，环境变量 TESSDATA_PREFIX 指过去
+$env:TESSDATA_PREFIX = "$HOME\.tessdata"
+$env:PATH = "C:\Program Files\Tesseract-OCR;" + $env:PATH
+
+python scripts/benchmark_ocr_quality.py \
+    --image_dir data/p1_2_pages \
+    --ir_dir ./models \
+    --tesseract_lang chi_sim+eng \
+    --output_dir results/phase1_p1_2 \
+    --device CPU
+```
+
+**结果总览**（CPU，Intel AI PC，Tesseract 5.x + chi_sim+eng / PaddleOCR-VL-1.5-ov）：
+
+| 页面 | 类型 | Tesseract 耗时 | PaddleOCR-VL 耗时 | Tesseract 字数 | Paddle 字数 | 字符相似度 |
+|------|------|----------------:|------------------:|----------------:|------------:|-----------:|
+| formula_gb2423_p05 | 公式 | **2.8 s** | 26.9 s | 1416 | 1189 | 77.7% |
+| text_gb2423_p07 | 纯文字 | **2.6 s** | 26.9 s | 1239 | 983 | 74.8% |
+| table_gb2423_p14 | 表格 | **0.8 s** | 11.2 s | 518 | 2309 | **9.6%** |
+
+#### 关键定性差异
+
+1. **表格结构（决定性）**——Tesseract 把附录 NB.1 表（rowspan/colspan）拍扁成无
+   结构纯文本，仅截到表头几个词；PaddleOCR-VL 输出带 `<table>` HTML（rowspan/
+   colspan 完整保留），可被 chunker 的 `_normalize_html_tables` 转 Markdown 后
+   逐行切片入库。**这是 9.55% 字符相似度的成因**——结构信息完全不在 Tesseract 输出里。
+   对 RAG 场景，没结构就没法做 "Memory size | 80 GB" 这种精确行级召回。
+
+2. **公式标记**——Tesseract 0 个 LaTeX 标记，PaddleOCR-VL 输出 12 个 `$...$` 行内
+   公式。Tesseract 把 `$5\,K$` 退化成纯文本 `5 K`（人眼能看，但 Markdown 渲染丢
+   公式格式，下游若想做"按公式查文档"的查询会缺失关键元数据）。
+
+3. **段落布局**——两者在纯文字页都拿到了主要内容，但 Tesseract 把 `## 3.1`、
+   `## 4.2` 这类章节号识别为段落首字符（无 Markdown 标题语义），且偶发字符替换
+   （把 `Ae` 识为 `Ac`）。PaddleOCR-VL 输出已经是结构化 Markdown，标题/段落/表格
+   层级清晰。
+
+#### 速度 vs 质量取舍
+
+| | Tesseract | PaddleOCR-VL |
+|--|-----------|--------------|
+| 速度（CPU） | **0.8–2.8 s/页**（10–30× 快） | 11–27 s/页 |
+| 表格结构 | 散落纯文本 | HTML 表格 + rowspan/colspan ✅ |
+| LaTeX 公式 | 退化为纯文本 | `$...$` 行内公式 ✅ |
+| 标题层级 | 平铺 | Markdown `##` 层级 ✅ |
+| 中文准确率 | 字符级 OK，偶有替换 | 字符级 OK，复杂版式更稳 |
+| 适用场景 | 纯文字、对速度敏感的批量预筛 | RAG 入库、结构化 Markdown 交付 |
+
+**Phase 3 主线选 PaddleOCR-VL 的理由（被本对比证据支持）**：RAG 检索需要表格行
+级和章节标题元信息支撑精确召回与 `[doc p.页]` 引用——Tesseract 缺这两类结构
+就无法支撑下游业务。速度差距（10–30×）则用"批处理一次性入库 + 后续查询毫秒级
+检索"摊掉。
+
+输出物：`results/phase1_p1_2/quality_compare.{md,json}` + 每张图单独的
+`quality_compare/<img>/` 目录（含 Tesseract `*.txt` / PaddleOCR-VL `*.md` /
+diff 文件 / 原图副本，便于在最终 README/Notebook 引用截图）。
+
+---
+
+### 6. Phase 3 → P1-1 工程改进溢出（提取自实战）
 
 本期 P1-1 把 demo 跑在真实业务 PDF 上时暴露了两个 chunker / 索引层的真实坑，已
 在 chunker 和 build_index 里修复：

@@ -41,3 +41,6 @@ openvino/chroma_db_eval/
 openvino/build_index.summary.json
 openvino/results/phase3/
 openvino/results/phase2_eval/
+
+# P1-2 OCR 对比产出（脚本生成）
+openvino/results/phase1_p1_2/
