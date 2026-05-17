@@ -49,7 +49,7 @@
 
 - [x] **Phase 1 (Week 1)**: 环境搭建 + 模型验证 + 推理 Benchmark — 实测数据落地（OV CPU/GPU 1.47×，PT baseline 弃测有书面说明）
 - [x] **Phase 2 (Week 2)**: 文档解析 + 表格感知切片模块 — 切片器 3 处真实漏洞修复 + GB/T 2423.1 14 页实测 87 chunks
-- [ ] **Phase 3 (Week 3 ← 现在)**: RAG 端到端最小闭环（端到端 Demo 主线，详见下方"W3 主线"）
+- [x] **Phase 3 (Week 3)**: RAG 端到端最小闭环 — Embedder (Qwen3-Embedding-0.6B-int8) + ChromaDB (99 chunks) + Qwen3-1.7B-int4 LLM 全链路打通，5 条业务问题 CPU 端 ~3.3s/题
 - [ ] **Phase 4 (Week 4)**: 必做对比 + 加分项（详见下方"W4 计划"）
 - [ ] **Phase 5 (Week 5)**: 演示视频 + README 终稿 + Notebook + PR 提交
 
@@ -57,11 +57,11 @@
 
 > 目标：交付一段可复现的端到端 Demo（运行命令 + 样例问题 + 检索结果 + 带 (doc,page) 引用的回答），W3 周报硬性要求展示完整跑通结果。
 
-- [ ] **P0-1 Embedding + ChromaDB**：BGE-small-zh 转 OpenVINO IR（INT8）→ ChromaDB 持久化 → Phase 2 输出的 chunks.jsonl 灌入 → 人工验证 Top-K 召回相关性
-- [ ] **P0-2 LLM 生成**：`openvino_genai.LLMPipeline` 加载 `OpenVINO/Qwen3-1.7B-int4-ov`，RAG prompt 模板设计 + 输出带 (doc_name, page) 引用，`enable_thinking=False`
-- [ ] **P0-3 端到端 `scripts/run_qa.py`**：完整 PDF → 解析 → 入库 → 提问 → 答案，跑 **3~5 条业务问题**记录耗时分解（embed / retrieve / LLM）；带 1~2 份 PDF 输入即可
-- [ ] **P0-4 README/复现物料并行启动**：端到端通的当晚就回填运行命令、样例问题、终端截图、性能数据；不要拖到 W5
-- [ ] **P0-5 NPU 限制说明**：在 README/周报里一句话写清"当前 IR 含 PP-DocLayoutV3 算子，NPU 暂不支持完整 OCR 链路，主线用 CPU/GPU/AUTO"——**不要硬试 V3 NPU 浪费时间**
+- [x] **P0-1 Embedding + ChromaDB**：用 `OpenVINO/Qwen3-Embedding-0.6B-int8-ov`（官方预转 INT8 IR，多语言含中文，替代无预转 IR 的 BGE-small-zh）+ ChromaDB Persistent 灌入 Phase 2 的 99 chunks，encode 138.6 ms/chunk，cos Top-K 召回相关性人工验证通过（见 `openvino/results/phase3/qa_run.md` Top-K 命中段）
+- [x] **P0-2 LLM 生成**：`openvino_genai.LLMPipeline` 加载 `OpenVINO/Qwen3-1.7B-int4-ov`，RAG prompt 模板设计完成 + 输出带 `[doc_name p.页码]` 引用，`enable_thinking=False` + `/no_think` 双保险 + `<think>` 后处理剥离
+- [x] **P0-3 端到端 `scripts/run_qa.py`**：跑通 5 条业务问题，3 条事实回答正确 + 2 条防幻觉拒答（1 条 retrieval miss，1 条保守拒答），平均 ~3.3s/题（CPU），耗时分解：embed 69ms / retrieve 1.7ms / LLM 3270ms
+- [x] **P0-4 README/复现物料**：`openvino/README.md` 新增 Phase 3 章节（运行命令 + 输出示例表 + 性能数据 + 已知限制）
+- [x] **P0-5 NPU 限制说明**：`openvino/README.md` 写了独立"Phase 3 NPU 限制说明"段，明确主线走 CPU/GPU/AUTO 的三条理由，并交叉引用 2026-05-22 决策记录
 
 ### W3 必做评测（瘦身版）— P1
 
@@ -133,6 +133,12 @@
 | `openvino/scripts/benchmark_inference.py` | Phase 1 · PyTorch vs OpenVINO 速度 Benchmark |
 | `openvino/scripts/benchmark_ocr_quality.py` | Phase 1 · Tesseract vs PaddleOCR-VL 质量对比 |
 | `openvino/scripts/run_phase2_pipeline.py` | Phase 2 · PDF → 解析 → 表格感知切片 CLI |
+| `openvino/scripts/build_index.py` | Phase 3 · chunks.jsonl → ChromaDB 入库 |
+| `openvino/scripts/run_qa.py` | Phase 3 · 端到端 RAG 问答 Demo |
+| `openvino/src/embedding.py` | Phase 3 · Qwen3-Embedding OpenVINO 封装 |
+| `openvino/src/vector_store.py` | Phase 3 · ChromaDB 持久化封装 |
+| `openvino/src/llm.py` | Phase 3 · Qwen3-1.7B-int4 LLMPipeline 封装 |
+| `openvino/src/rag.py` | Phase 3 · embedder + store + LLM 编排 |
 | `openvino/scripts/download_eval_materials.py` | Phase 3/4 · 评测材料自动下载（PDF + OmniDocBench） |
 | `openvino/scripts/run_omnidocbench_subset.py` | Phase 4 · OmniDocBench 子集对比骨架 |
 
@@ -144,5 +150,8 @@
 | `openvino/data/test_documents/` | Phase 2 测试 PDF 3 份（git 跟踪） |
 | `openvino/data/eval_questions.jsonl` | Phase 3/4 评测题集（git 跟踪） |
 | `openvino/data/eval_questions.schema.md` | 评测题集 schema |
+| `openvino/data/demo_questions.txt` | Phase 3 端到端 Demo 的 5 条业务问题（git 跟踪） |
 | `openvino/data/eval_documents/` | Phase 3/4 真实评测 PDF（`.gitignore`，自动下载） |
 | `openvino/data/omnidocbench/` | OmniDocBench 标注 + 采样图（`.gitignore`） |
+| `openvino/chroma_db/` | Phase 3 · ChromaDB 持久化库（`.gitignore`） |
+| `openvino/results/phase3/` | Phase 3 · QA 运行结果（脚本生成） |

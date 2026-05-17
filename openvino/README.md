@@ -3,7 +3,7 @@
 > 飞桨黑客松第 10 期 · 文心伙伴赛道
 > 项目：基于 PaddleOCR-VL + OpenVINO 的产品文档智能入库与客服问答系统
 
-本目录是 OpenVINO 路径的全部代码和实验产物，**Phase 1（推理 Benchmark）** 与 **Phase 2（文档解析 + 切片）** 已完成代码实现，运行所需的模型 / 测试数据由开发者本机准备。
+本目录是 OpenVINO 路径的全部代码和实验产物。Phase 1（推理 Benchmark）、Phase 2（文档解析 + 切片）、**Phase 3（RAG 端到端问答）** 均已完成代码实现，运行所需的模型 / 测试数据由开发者本机准备（IR 通过 huggingface_hub 自动拉取，PDF 见 `data/`）。
 
 ```
 openvino/
@@ -12,20 +12,29 @@ openvino/
 ├── configs/models.json             模型/路径配置
 ├── data/
 │   ├── test_images/README.md       Phase 1 的 10 张测试图片说明
-│   └── test_documents/README.md    Phase 2 的 3 份测试 PDF 说明
+│   ├── test_documents/README.md    Phase 2 的 3 份测试 PDF 说明
+│   ├── demo_questions.txt          Phase 3 端到端 Demo 的 5 条业务问题
+│   └── eval_questions.jsonl        评测题集骨架（W4 加分项用）
 ├── src/
 │   ├── inference.py                OpenVINO / PyTorch / Tesseract 推理封装
 │   ├── pdf_preprocessor.py         pdfplumber 可读性判断 + pdf2image 渲染
 │   ├── doc_parser.py               PaddleOCR-VL 全图解析 → 结构化 Markdown
 │   ├── chunker.py                  表格感知切片 + 元数据
-│   └── pipeline.py                 Phase 2 端到端管线
+│   ├── pipeline.py                 Phase 2 端到端管线
+│   ├── embedding.py                Phase 3 · Qwen3-Embedding-0.6B-int8 OpenVINO 封装
+│   ├── vector_store.py             Phase 3 · ChromaDB 持久化封装
+│   ├── llm.py                      Phase 3 · Qwen3-1.7B-int4 openvino_genai 封装
+│   └── rag.py                      Phase 3 · embedder + store + LLM 编排
 ├── scripts/
 │   ├── benchmark_inference.py      Phase 1 · PyTorch vs OpenVINO 速度
 │   ├── benchmark_ocr_quality.py    Phase 1 · Tesseract vs PaddleOCR-VL 质量
-│   └── run_phase2_pipeline.py      Phase 2 · CLI 入口
+│   ├── run_phase2_pipeline.py     Phase 2 · CLI 入口
+│   ├── build_index.py              Phase 3 · 把 chunks.jsonl 灌入 ChromaDB
+│   └── run_qa.py                   Phase 3 · 端到端 RAG 问答 Demo
 └── results/
     ├── phase1/                     Benchmark 输出（脚本运行后自动生成）
-    └── phase2/                     切片输出（脚本运行后自动生成）
+    ├── phase2/                     切片输出（脚本运行后自动生成）
+    └── phase3/                     问答结果（脚本运行后自动生成）
 ```
 
 ---
@@ -147,10 +156,122 @@ python scripts/run_phase2_pipeline.py --pdf_dir data/test_documents --out result
 
 ---
 
-## 后续 Phase（W3+）
+## Phase 3 · RAG 端到端问答
 
-- **W3 (Phase 3)**：BGE-small embedding + ChromaDB 入库 + Qwen3-1.7B INT4 问答
-- **W4 (Phase 4)**：Tesseract 全链路 vs PaddleOCR-VL 全链路对比评测
-- **W5 (Phase 5)**：Notebook 整理 + 提交
+### 模型选择
+
+| 角色 | 模型 ID | 设备 | 备注 |
+|------|---------|------|------|
+| Embedding | `OpenVINO/Qwen3-Embedding-0.6B-int8-ov` | CPU / GPU | 1024 维，多语言含中文，官方预转 INT8 IR |
+| LLM | `OpenVINO/Qwen3-1.7B-int4-ov` | CPU / GPU | 通过 `openvino_genai.LLMPipeline` 加载，`enable_thinking=False` |
+| 向量库 | ChromaDB Persistent | — | cosine 距离，`chroma_db/` 目录 |
+
+> **关于"BGE-small-zh"**：原计划用 BAAI/bge-small-zh-v1.5 + OV 转换。`OpenVINO/`
+> 官方仓库当前没有该模型的预转 INT8 IR，本项目为了与 Phase 1/2 保持"全程官方
+> 预转 IR"的复现性，改用 `OpenVINO/Qwen3-Embedding-0.6B-int8-ov`（多语言含中文，
+> INT8）。若用户想坚持 BGE，可用 optimum-intel 自行转换后通过 `--embed_local_dir`
+> 传入。
+
+### 一次性准备（自动下载 IR 到 HF cache）
+
+```powershell
+# Windows 默认 cp1252 控制台需要 UTF-8，否则中文 print 直接崩溃
+$env:PYTHONIOENCODING = "utf-8"
+# Windows 无开发者模式时，huggingface_hub 的 symlink 会报权限错误
+$env:HF_HUB_DISABLE_SYMLINKS = "1"
+$env:HF_HUB_DISABLE_SYMLINKS_WARNING = "1"
+```
+
+### 1. 灌库：Phase 2 chunks → ChromaDB
+
+```bash
+python scripts/build_index.py \
+    --chunks_dir results/phase2 \
+    --persist_dir chroma_db \
+    --device CPU \
+    --reset
+```
+
+输出：
+
+- `chroma_db/` —— ChromaDB 持久化目录
+- `build_index.summary.json` —— 编码耗时、维度、入库总数
+
+实测（CPU，99 个 chunk）：embedder 编译 ~4s，encode `138.6 ms/chunk`，总入库 ~14s。
+
+### 2. 端到端问答
+
+```bash
+python scripts/run_qa.py \
+    --questions_file data/demo_questions.txt \
+    --persist_dir chroma_db \
+    --top_k 5 --max_new_tokens 384 \
+    --embed_device CPU --llm_device CPU \
+    --out results/phase3/qa_run.json \
+    --out_md results/phase3/qa_run.md
+```
+
+可选问题源：
+
+- `--question "你的问题"` —— 单条 CLI 输入
+- `--questions_file data/demo_questions.txt` —— 每行一题的纯文本
+- `--eval_jsonl data/eval_questions.jsonl --question_ids q003,q008` —— 从评测集挑题
+
+如果 `chroma_db/` 为空，加 `--auto_build_index` 让 `run_qa` 自动从
+`--chunks_dir` 灌一遍。
+
+### 3. Demo 输出示例（CPU，5 题）
+
+| # | 问题 | 答案 |
+|---|------|------|
+| 1 | A100 型号的工作温度范围是多少？ | A100 型号的工作温度范围是 -20~70℃ `[spec_with_tables p.1]` |
+| 2 | A300 型号的额定功率是多少瓦？ | A300 型号的额定功率是 500W `[spec_with_tables p.1]` |
+| 3 | 故障代码 E01 或 E02 出现时应该如何处理？ | 文档中未提及故障代码 E01 或 E02 的处理方法。`[spec_with_tables p.1]`  （注：原文有"请立即联系售后"，模型判定为不构成"处理方法"而保守拒答——避免幻觉的取舍） |
+| 4 | GB/T 2423.1—2008 这份标准对应的国际标准编号是多少？ | GB/T 2423.1—2008 对应的国际标准编号是 IEC 60068-2-1:2007 `[gb_t_2423_1 p.3]` |
+| 5 | GB/T 2423.1—2008 标准的实施日期是哪一天？ | 文档中未提及 GB/T 2423.1—2008 标准的实施日期。`[gb_t_2423_1 p.1]`  （注：原文 p.1 有"2009-10-01 实施"，但该 chunk 因英文标题占主导未被 Top-5 召回——典型 retrieval miss） |
+
+性能（CPU，i5 系列，Qwen3-1.7B-int4）：
+
+| 阶段 | 平均耗时 (ms) |
+|------|---------------|
+| embed query | 69 |
+| ChromaDB retrieve | 1.7 |
+| LLM 生成（含 token 解码） | 3270 |
+| **end-to-end / 题** | **3340** |
+| LLM 吞吐 | ~10.7 tok/s |
+
+完整运行日志见 `results/phase3/qa_run.md` 与 `qa_run.json`。
+
+### Phase 3 已知限制
+
+1. **Q5 风格的 retrieval miss**：当目标事实所在的 chunk 被其他主题（如英文标题、
+   章节名）"语义稀释"时，1024 维小模型可能漏召回。短期缓解 = 调大 `--top_k` 或
+   切更小的 chunk；W4 加分项里会试用 BGE-reranker-base 重排候选。
+2. **Q3 风格的保守拒答**：严格 system prompt 下，模型会把"联系售后"这种简短指引
+   判为"未提供处理方法"，这是抗幻觉的代价——保留这种取舍。
+
+---
+
+## Phase 3 NPU 限制说明
+
+**主线 Demo 使用 CPU / GPU / AUTO，不在 NPU 上跑完整链路**，原因：
+
+1. **PaddleOCR-VL 的 PP-DocLayoutV3 IR 含 NPU 暂不支持的算子**——Phase 2 的 OCR
+   路径上 NPU 会回落到 CPU，反而比直接走 CPU 慢；
+2. Qwen3-1.7B-int4 与 Qwen3-Embedding-0.6B-int8 在 NPU 上理论可跑，但 NPU 共享
+   系统内存且对 dynamic-shape 支持不全，2026.1 plugin 上仍有概率编译失败；
+3. W4 加分项（P2）会专门尝试 "OCR-CPU / LLM-NPU / Embedding-NPU" 的拆分方案
+   做 AI PC 全家桶叙事，时间不够就砍。
+
+不要在 W3 主线上花时间硬试 V3 NPU——这是导师 2026-05-22 反馈后明确的方向收敛
+（见 `docs/决策记录/2026-05-22_导师反馈方向校准.md`）。
+
+---
+
+## 后续 Phase
+
+- **W4 (Phase 4)**：Tesseract vs PaddleOCR-VL 少量页对比 + Demo 视频 + README 终稿
+- **W5 (Phase 5)**：PR 提交（PFCCLab 仓库）+ Notebook + 演示视频终稿
+- **加分项 (P2/P3)**：BGE-reranker 重排、NPU 路径尝试、Gradio UI、OmniDocBench 子集
 
 详见 [`../docs/项目计划.md`](../docs/项目计划.md) 与 [`../docs/开发手册.md`](../docs/开发手册.md)。
