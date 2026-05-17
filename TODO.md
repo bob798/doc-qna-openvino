@@ -49,13 +49,16 @@
 
 - [x] **Phase 1 (Week 1)**: 环境搭建 + 模型验证 + 推理 Benchmark — 实测数据落地（OV CPU/GPU 1.47×，PT baseline 弃测有书面说明）
 - [x] **Phase 2 (Week 2)**: 文档解析 + 表格感知切片模块 — 切片器 3 处真实漏洞修复 + GB/T 2423.1 14 页实测 87 chunks
-- [x] **Phase 3 (Week 3)**: RAG 端到端最小闭环 — Embedder (Qwen3-Embedding-0.6B-int8) + ChromaDB (99 chunks) + Qwen3-1.7B-int4 LLM 全链路打通，5 条业务问题 CPU 端 ~3.3s/题
-- [ ] **Phase 4 (Week 4)**: 必做对比 + 加分项（详见下方"W4 计划"）
-- [ ] **Phase 5 (Week 5)**: 演示视频 + README 终稿 + Notebook + PR 提交
+- [x] **Phase 3 (Week 3)**: RAG 端到端最小闭环 + 业务问题精选 + OCR 路径选型对比 — 全部已落地：Embedder (Qwen3-Embedding-0.6B-int8) + ChromaDB + Qwen3-1.7B-int4 LLM 跑通，Demo 集 5 题 ~3.3s/题，eval 集 5 题（H100 PB）+ Tesseract vs Paddle 3 页对比，证据完整
+- [ ] **Phase 4 (Week 4 ← 现在)**: 终交付物 — 演示视频 + README 终稿 + PR 提交（详见下方"W4 计划"）
+- [ ] **Phase 5 (Week 5)**: 兜底周（W4 完成后用于 review 反馈 / 补救；若 W4 直接交付到位则无需 W5）
 
-### W3 主线（2026-05-23 ~ 2026-06-05）— 必做 P0
+### W3 已完成（2026-05-23 ~ 2026-06-05）— 主线 + 必做评测全部交付
 
-> 目标：交付一段可复现的端到端 Demo（运行命令 + 样例问题 + 检索结果 + 带 (doc,page) 引用的回答），W3 周报硬性要求展示完整跑通结果。
+> 目标已达成：可复现的端到端 Demo（运行命令 + 样例问题 + 检索结果 + 带 (doc,page) 引用的回答） + Tesseract vs PaddleOCR-VL 选型证据。
+> W3 周报草稿已写（`docs/周报/W3_2026-06-05.md`），待开 PR + 发邮件——见下方"周报"段。
+
+#### W3 主线（必做 P0）
 
 - [x] **P0-1 Embedding + ChromaDB**：用 `OpenVINO/Qwen3-Embedding-0.6B-int8-ov`（官方预转 INT8 IR，多语言含中文，替代无预转 IR 的 BGE-small-zh）+ ChromaDB Persistent 灌入 Phase 2 的 99 chunks，encode 138.6 ms/chunk，cos Top-K 召回相关性人工验证通过（见 `openvino/results/phase3/qa_run.md` Top-K 命中段）
 - [x] **P0-2 LLM 生成**：`openvino_genai.LLMPipeline` 加载 `OpenVINO/Qwen3-1.7B-int4-ov`，RAG prompt 模板设计完成 + 输出带 `[doc_name p.页码]` 引用，`enable_thinking=False` + `/no_think` 双保险 + `<think>` 后处理剥离
@@ -63,21 +66,34 @@
 - [x] **P0-4 README/复现物料**：`openvino/README.md` 新增 Phase 3 章节（运行命令 + 输出示例表 + 性能数据 + 已知限制）
 - [x] **P0-5 NPU 限制说明**：`openvino/README.md` 写了独立"Phase 3 NPU 限制说明"段，明确主线走 CPU/GPU/AUTO 的三条理由，并交叉引用 2026-05-22 决策记录
 
-### W3 必做评测（瘦身版）— P1
+#### W3 必做评测（瘦身版 P1）
 
 - [x] **P1-1 业务问题集精简**：从 `eval_questions.jsonl` 18 题挑 5 题（q008/q009/q011/q013/q015，覆盖 table_lookup×3 + cross_doc×1 + refusal×1），在 2 份 NVIDIA H100 PB（46 页 / 372 chunks）上端到端跑：1/5 业务 hit + 2/5 正确拒答 + 1/5 方向对 + 1/5 幻觉。失败案例集中暴露 small-embedder + last-token-pool 在表格行 chunk 上的系统性偏差（详见 `openvino/README.md § P1-1`），W4 加分项 BGE-reranker 设计为对此打补丁。本期顺手把 chunker 表格 caption 增强 + `--min_chars 60` 短 chunk 噪声过滤两处工程改进溢出
 - [x] **P1-2 Tesseract vs PaddleOCR-VL 少量对比**：3 张代表性页面（GB/T 2423.1 p.5 公式 / p.7 纯文字 / p.14 复杂表格）对比完成。决定性结果：表格页 char 相似度仅 9.55%（Tesseract 完全丢失 rowspan/colspan 结构），公式页 Tesseract 0 个 LaTeX 标记 vs Paddle 12 个；速度 Tesseract 0.8-2.8s vs Paddle 11-27s（10-30× 快但结构丢失），主线选 Paddle 理由已被证据支持，详见 `openvino/README.md § 5 P1-2`
 
-### W4 计划（2026-05-30 ~ 2026-06-05）
+### W4 计划（2026-05-30 ~ 2026-06-05）— 最后冲刺，6/5 截止 ← 现在
 
-- [ ] **P0 演示视频/录屏**：terminal 跑通 + 回答带引用截图，2~3 分钟
-- [ ] **P0 README 终稿 + 依赖说明 + 模型准备**：确保 PR 可一键复现
-- [ ] **P0 提交 PR**（PFCCLab 仓库）
-- [ ] **加分（P2）NPU 进取路径**：把 Qwen3 LLM 或 BGE Embedding 切到 NPU 上跑（NPU 明确支持的 workload），讲"OCR-GPU / LLM-NPU / 检索-CPU"AI PC 全家桶叙事；**时间不够就直接砍**
+> 主线优先级：**周报 PR + 邮件 → 演示视频 → README 终稿 → 提交 PFCCLab PR**。
+> 加分项时间允许再做，不阻塞 P0。
+
+**P0 — 必做交付物（按建议执行顺序）**
+
+- [ ] **W3 周报 PR + 邮件**（≤ 0.5 day，本周内）
+  - [ ] 在 [PFCCLab/Camp](https://github.com/PFCCLab/Camp) 开 W3 PR，把 `docs/周报/W3_2026-06-05.md` 内容贴到 `WeeklyReports/Hackathon_10th/ERNIEPartner/W3_2026-06-05.md`
+  - [ ] 发 W3 双周报邮件：按 `docs/周报/W3_2026-06-05.email.md` 模板，主题日期改成实际发送日（如 `0530`），正文里 PR 链接占位符替换成真实 URL
+  - [ ] 回头把"周报"段的 W3 状态打勾，附上 PR 编号
+- [ ] **演示视频/录屏**（1 day）：terminal 跑通 `build_index.py` + `run_qa.py` 端到端 + 回答带 `[doc p.页]` 引用 + 性能输出截图，2~3 分钟（OBS / Windows 内置录屏均可）
+- [ ] **README 终稿**（0.5 day）：核对一遍 `openvino/README.md`——Windows 环境变量段（`HF_HUB_DISABLE_SYMLINKS` / `PYTHONIOENCODING` / `TESSDATA_PREFIX`）、IR 下载量（Qwen3-1.7B-int4 ≈ 1 GB / Qwen3-Embedding-0.6B-int8 ≈ 600 MB / PaddleOCR-VL-1.5 ≈ 2.7 GB）、磁盘需求、模型选型决策（BGE → Qwen3-Embedding）
+- [ ] **提交 PR 到 PFCCLab 仓库**（0.5 day）：6/5 前最晚 6/4 提交，预留半天 review 反馈窗口；PR body 引用 `openvino/README.md` 的 Phase 3 章节作为主证据
+
+**P2 加分项（时间不够直接砍，按 ROI 排序）**
+
+- [ ] **BGE-reranker-base 重排**（最高 ROI）——直接补 P1-1 暴露的表格行 chunk 召回问题：用 `BAAI/bge-reranker-base` cross-encoder 在 Top-30 候选上重新打分，把 `Memory size | 94 GB` 这种行 chunk 顶到 Top-5
+- [ ] **NPU 进取路径**——把 Qwen3 LLM 或 Embedding 切到 NPU（NPU 明确支持的 workload），讲"OCR-GPU / LLM-NPU / 检索-CPU"AI PC 全家桶叙事
 
 ### 加分项 — P3（不阻塞主流程，时间盒严控）
 
-> 以下项 6/2 前主线没稳就完全砍掉，**主 Demo > 一切**。
+> 以下项 6/2 前 W4 P0 没稳就完全砍掉，**主 Demo + PR > 一切**。
 
 - [ ] OmniDocBench 子集 20 张图跑 Edit Distance / TEDS / CDM
 - [ ] 接入 RAGAS（faithfulness / answer_relevancy / context_precision / context_recall）
@@ -103,9 +119,9 @@
 
 - [x] Week 1 周报（已提交 [PFCCLab/Camp #598](https://github.com/PFCCLab/Camp/pull/598)）
 - [x] Week 2 周报（已提交 [PFCCLab/Camp #609](https://github.com/PFCCLab/Camp/pull/609)）
-- [ ] Week 3 周报（草稿已写：[`docs/周报/W3_2026-06-05.md`](docs/周报/W3_2026-06-05.md) + 邮件草稿；待开 PFCCLab/Camp PR + 发邮件）
-- [ ] Week 4 周报
-- [ ] Week 5 周报
+- [ ] **Week 3 周报（待发 — W4 第一项 P0）**：草稿已写 [`docs/周报/W3_2026-06-05.md`](docs/周报/W3_2026-06-05.md) + 邮件草稿 [`docs/周报/W3_2026-06-05.email.md`](docs/周报/W3_2026-06-05.email.md)；待开 PFCCLab/Camp PR + 发邮件，回头补 PR 编号
+
+> 周报是按双周（W1 5/8 / W2 5/22 / W3 6/5）提交，本期 W3 为收官周报。若 W4 主线 PR 提交后官方仍要求继续周报，再补 Week 4 / Week 5。
 
 ---
 
@@ -151,7 +167,11 @@
 | `openvino/data/eval_questions.jsonl` | Phase 3/4 评测题集（git 跟踪） |
 | `openvino/data/eval_questions.schema.md` | 评测题集 schema |
 | `openvino/data/demo_questions.txt` | Phase 3 端到端 Demo 的 5 条业务问题（git 跟踪） |
+| `openvino/data/p1_2_pages/` | P1-2 OCR 对比的 3 张代表性页面（git 跟踪，复现入口） |
 | `openvino/data/eval_documents/` | Phase 3/4 真实评测 PDF（`.gitignore`，自动下载） |
 | `openvino/data/omnidocbench/` | OmniDocBench 标注 + 采样图（`.gitignore`） |
-| `openvino/chroma_db/` | Phase 3 · ChromaDB 持久化库（`.gitignore`） |
+| `openvino/chroma_db/` | Phase 3 · Demo 集 ChromaDB 持久化库（`.gitignore`） |
+| `openvino/chroma_db_eval/` | Phase 3 · P1-1 eval 集 ChromaDB（`.gitignore`） |
 | `openvino/results/phase3/` | Phase 3 · QA 运行结果（脚本生成） |
+| `openvino/results/phase2_eval/` | P1-1 真实评测 PDF 切片输出（`.gitignore`） |
+| `openvino/results/phase1_p1_2/` | P1-2 Tesseract vs Paddle 对比输出（`.gitignore`） |
