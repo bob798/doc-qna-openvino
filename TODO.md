@@ -65,7 +65,7 @@
 
 ### W3 必做评测（瘦身版）— P1
 
-- [ ] **P1-1 业务问题集精简**：从 `eval_questions.jsonl` 18 题里挑 **3~5 题最能说明效果**的，端到端跑出回答 + 引用 + 耗时，作为 Demo 主证据
+- [x] **P1-1 业务问题集精简**：从 `eval_questions.jsonl` 18 题挑 5 题（q008/q009/q011/q013/q015，覆盖 table_lookup×3 + cross_doc×1 + refusal×1），在 2 份 NVIDIA H100 PB（46 页 / 372 chunks）上端到端跑：1/5 业务 hit + 2/5 正确拒答 + 1/5 方向对 + 1/5 幻觉。失败案例集中暴露 small-embedder + last-token-pool 在表格行 chunk 上的系统性偏差（详见 `openvino/README.md § P1-1`），W4 加分项 BGE-reranker 设计为对此打补丁。本期顺手把 chunker 表格 caption 增强 + `--min_chars 60` 短 chunk 噪声过滤两处工程改进溢出
 - [ ] **P1-2 Tesseract vs PaddleOCR-VL 少量对比**：选 **2~3 个代表性页面**（含表格 + 中文 + 公式），人工或脚本对比识别质量，**不跑完整 OmniDocBench**
 
 ### W4 计划（2026-05-30 ~ 2026-06-05）

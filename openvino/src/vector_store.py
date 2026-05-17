@@ -220,8 +220,18 @@ def load_chunks_jsonl(path: str | Path) -> List[dict]:
     return out
 
 
-def iter_chunks_jsonl(paths: Iterable[str | Path]) -> List[dict]:
-    """合并多份 jsonl，强行打上 doc_name=文件名（不含 .chunks）兜底"""
+def iter_chunks_jsonl(
+    paths: Iterable[str | Path],
+    min_chars: int = 0,
+) -> List[dict]:
+    """
+    合并多份 jsonl，强行打上 doc_name=文件名（不含 .chunks）兜底。
+
+    min_chars > 0 时，丢掉文本短于阈值的 chunk——主要用于过滤页眉/页脚噪声。
+    对很多 NVIDIA / 国标 PDF，pdfplumber 会把页脚 "Product Name | <page>" 拆成
+    独立段落 → 切片器产 N 个几乎一样的短 chunk → 检索时排在头部把真正的事实
+    挤出 Top-K。设 min_chars=60 实测能消掉这种 boilerplate。
+    """
     merged = []
     for p in paths:
         p = Path(p)
@@ -230,5 +240,7 @@ def iter_chunks_jsonl(paths: Iterable[str | Path]) -> List[dict]:
         for it in items:
             it.setdefault("metadata", {})
             it["metadata"].setdefault("doc_name", fallback_doc)
-        merged.extend(items)
+            if min_chars > 0 and len(it.get("text", "").strip()) < min_chars:
+                continue
+            merged.append(it)
     return merged

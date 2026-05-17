@@ -171,26 +171,35 @@ def _detect_table_blocks(lines: List[str]) -> List[tuple[int, int, TableBlock]]:
 
 
 def _table_to_chunks(
-    block: TableBlock, base_meta: dict
+    block: TableBlock,
+    base_meta: dict,
+    caption: Optional[str] = None,
 ) -> List[Chunk]:
-    """每行 + 表头 → 一个 chunk；同时附加一个表头总览 chunk 便于召回"""
+    """
+    每行 + 表头 → 一个 chunk；同时附加一个表头总览 chunk 便于召回。
+
+    caption（可选）：紧贴表格的上文标题/说明行（如 "Table 2. Memory Specifications"），
+    会拼到每个 chunk 的开头，给检索一个稳定的语义锚——很多 PDF 的具体表格用通用列名
+    （Specification / Description / Value），单看表头与查询匹配度低，加上 caption 后
+    "Memory size | 80 GB" 这种行才更容易被 "HBM 显存容量" 召回。
+    """
     chunks: List[Chunk] = []
 
+    def _wrap(body: str) -> str:
+        return f"{caption}\n\n{body}" if caption else body
+
     overview = "\n".join([block.header, block.separator])
-    chunks.append(
-        Chunk(
-            text=overview,
-            metadata={**base_meta, "kind": "table_header", "row_count": len(block.rows)},
-        )
-    )
+    overview_meta = {**base_meta, "kind": "table_header", "row_count": len(block.rows)}
+    if caption:
+        overview_meta["table_caption"] = caption
+    chunks.append(Chunk(text=_wrap(overview), metadata=overview_meta))
+
     for idx, row in enumerate(block.rows, start=1):
         text = "\n".join([block.header, block.separator, row])
-        chunks.append(
-            Chunk(
-                text=text,
-                metadata={**base_meta, "kind": "table", "row_index": idx},
-            )
-        )
+        row_meta = {**base_meta, "kind": "table", "row_index": idx}
+        if caption:
+            row_meta["table_caption"] = caption
+        chunks.append(Chunk(text=_wrap(text), metadata=row_meta))
     return chunks
 
 
@@ -276,8 +285,21 @@ def chunk_page(page: ParsedPage, doc_name: str) -> List[Chunk]:
             chunks.extend(_flush_buffer(buf, base_with_section()))
             buf = []
 
+            # 找最近一条非空非表格行作 table caption（如 "Table 2. Memory Specifications"）
+            caption: Optional[str] = None
+            for j in range(next_table[0] - 1, -1, -1):
+                if j in table_idx_set:
+                    break
+                s = lines[j].strip()
+                if not s:
+                    continue
+                # 去掉 markdown 标题前缀
+                m_h = HEADING_RE.match(s)
+                caption = m_h.group(2).strip() if m_h else s
+                break
+
             _, end, block = next_table
-            chunks.extend(_table_to_chunks(block, base_with_section()))
+            chunks.extend(_table_to_chunks(block, base_with_section(), caption=caption))
             i = end
             next_table = next(table_iter, None)
             continue

@@ -61,6 +61,8 @@ def parse_args():
                    help="若指定，直接用本地 IR 目录，不走 HF 下载")
     p.add_argument("--batch_size", type=int, default=8)
     p.add_argument("--max_length", type=int, default=1024)
+    p.add_argument("--min_chars", type=int, default=0,
+                   help="丢掉文本短于此阈值的 chunk（消除页眉页脚噪声，常用 60）")
     p.add_argument("--reset", action="store_true", help="灌入前清空集合")
     return p.parse_args()
 
@@ -85,8 +87,11 @@ def main():
     for f in files:
         logger.info(f"  - {f}")
 
-    chunks = iter_chunks_jsonl(files)
-    logger.info(f"chunks 总数: {len(chunks)}")
+    chunks = iter_chunks_jsonl(files, min_chars=args.min_chars)
+    if args.min_chars > 0:
+        logger.info(f"chunks 总数: {len(chunks)}（已过滤短于 {args.min_chars} 字符的噪声 chunk）")
+    else:
+        logger.info(f"chunks 总数: {len(chunks)}")
     if not chunks:
         logger.error("chunks 为空，退出")
         sys.exit(2)

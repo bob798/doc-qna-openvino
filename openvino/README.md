@@ -250,6 +250,82 @@ python scripts/run_qa.py \
 2. **Q3 风格的保守拒答**：严格 system prompt 下，模型会把"联系售后"这种简短指引
    判为"未提供处理方法"，这是抗幻觉的代价——保留这种取舍。
 
+### 4. P1-1 真实评测 PDF 业务问题集（2 份 NVIDIA H100 Product Brief）
+
+把 Demo 主证据从 Phase 2 已有 4 份 PDF 升级到 `data/eval_documents/` 真实评测 PDF。
+为保持 Phase 2 OCR 时间可控，本期只灌入 2 份 NVIDIA H100 PB（H100 PCIe + H100 NVL，
+共 46 页 / 372 chunks 灌入 `chroma_db_eval/`，含 chunker 表格 caption 增强 + 短
+chunk 噪声过滤 `--min_chars 60`）。从 `eval_questions.jsonl` 18 题里挑 5 题代表
+4 类查询：
+
+| # | id | 类型 | 问题 | 期望关键词 | 实测回答 | 结论 |
+|---|----|------|------|-----------|---------|------|
+| 1 | q008 | table_lookup | H100 PCIe HBM 显存容量？ | 80 GB | "文档中未提及" | ❌ retrieval miss → 正确拒答 |
+| 2 | q009 | table_lookup | H100 PCIe TDP？ | 350W | 350 W | ✅ |
+| 3 | q011 | table_lookup | H100 NVL 显存容量？ | 94 GB | "16 GB" | ❌ 幻觉（候选里没有 94 GB 行） |
+| 4 | q013 | cross_doc | 对比 H100 PCIe / NVL 显存差异 | 80 GB + 94 GB | "NVL 更高"（无具体数字） | ⚠️ 方向对但没拿到具体数字 |
+| 5 | q015 | refusal | H100 NVL 游戏渲染？ | must_refuse | "不支持光线追踪游戏渲染" | ✅ 正确拒答 |
+
+**1/5 业务 hit + 2/5 正确拒答 + 1/5 方向对 + 1/5 幻觉**。运行命令：
+
+```bash
+# 灌库（带 caption 增强 + 噪声过滤）
+python scripts/build_index.py \
+    --chunks_files results/phase2_eval/h100_pcie_pb.chunks.jsonl results/phase2_eval/h100_nvl_pb.chunks.jsonl \
+    --persist_dir chroma_db_eval --collection eval_chunks \
+    --device CPU --batch_size 8 --min_chars 60 --reset
+
+# 5 题选答
+python scripts/run_qa.py \
+    --eval_jsonl data/eval_questions.jsonl --question_ids q008,q009,q011,q013,q015 \
+    --persist_dir chroma_db_eval --collection eval_chunks \
+    --top_k 8 --max_new_tokens 384 \
+    --out results/phase3/eval_qa_run.json --out_md results/phase3/eval_qa_run.md
+```
+
+性能：avg total 3528 ms / 题（与 Demo 集相当），retrieve 1.6 ms（无瓶颈），LLM 3454 ms。
+
+#### P1-1 关键发现：small-embedder 在表格行 chunk 上的系统性偏差
+
+q008 / q011 / q013 都是同一类失败：要查表格里某一行的具体数值，但答案行 chunk
+（如 `Table 2. Memory Specifications | Memory size | 94 GB`）的余弦相似度只有
+**0.38**，而通用表头 chunk（如 `Specifications | NVIDIA H100 NVL`）能拿到 **0.75+**。
+即使把 `--top_k` 调到 30，含 `94 GB` 的行 chunk 仍然进不了候选池。
+
+原因可定位到两点：
+
+1. **last-token-pool 偏向尾部**：Qwen3-Embedding 用最后有效 token 的 hidden state
+   做句嵌入；表格行 chunk 以 `| --- |` 分隔符或 `| 94 GB |` 这种短串结尾，嵌入被
+   分隔符语义稀释，整体偏离 "memory size capacity" 这种概念。
+2. **小模型对多列表格列名的辨别力不足**：Table 1 表头是 `Specification | NVIDIA H100 NVL`，
+   Table 2 表头是 `Specification | Description`，两张表的内容主题完全不同，但
+   embedding 距离差异小；用户查询里出现 "NVIDIA H100" → Table 1 全行通杀。
+
+**这正是 W4 P2 加分项 BGE-reranker-base 设计要解决的问题**——把召回扩到 Top-30，
+让 reranker 用 cross-encoder 在 query × chunk 上重新打分，能把 "Memory size | 94 GB"
+顶起来。本期已经做了两项治标改进作为铺垫：
+
+- **chunker 表格 caption 增强**：每个表格行 chunk 在文本头注入紧贴表格的上文标题
+  （如 `Table 2. Memory Specifications`），让"Memory" 类关键词能间接命中；
+- **`--min_chars` 短 chunk 噪声过滤**：直接丢掉页脚 `"PB-11133-001_v02 | 6"` 这类
+  N 次重复短串，从 397 chunks 缩到 372；q009 / q015 召回质量明显改善。
+
+q009 / q015 能成功是因为：q009 的答案 chunk 里同时含 "Total board power" 和 "350 W default"
+两个强语义锚，q015 是 refusal 类（只要候选里没有 "gaming" 就该拒答），不依赖
+精确行召回。
+
+---
+
+### 5. Phase 3 → P1-1 工程改进溢出（提取自实战）
+
+本期 P1-1 把 demo 跑在真实业务 PDF 上时暴露了两个 chunker / 索引层的真实坑，已
+在 chunker 和 build_index 里修复：
+
+| 问题 | 现象 | 解决 |
+|------|------|------|
+| 页眉页脚噪声充斥 Top-K | NVIDIA PB 每页有 `"PB-11133-001_v02 \| <pageno>"` 短脚注，pdfplumber 拆成独立 chunk → 23 页产 23 个几乎一样的 noise chunk → 检索时反复占据头部 | `iter_chunks_jsonl(min_chars=60)` + `build_index.py --min_chars 60` 入参 |
+| 通用表头 vs 答案行不可区分 | Table 1 / Table 2 同一页，表头都是 `\| Specification \| ... \|`，仅 caption 不同；表格行 chunk 丢了 caption 信息 | `chunker._table_to_chunks` 加 `caption` 参数，遍历表格上文找最近一行非空非表格内容作 caption，注入 chunk 文本头 + 元数据 `table_caption` |
+
 ---
 
 ## Phase 3 NPU 限制说明

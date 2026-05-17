@@ -37,5 +37,7 @@ openvino/results/omnidocbench/
 
 # Phase 3 · ChromaDB 持久化 + QA 运行结果（脚本生成）
 openvino/chroma_db/
+openvino/chroma_db_eval/
 openvino/build_index.summary.json
 openvino/results/phase3/
+openvino/results/phase2_eval/
