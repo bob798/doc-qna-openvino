@@ -103,7 +103,7 @@
 
 - [x] Week 1 周报（已提交 [PFCCLab/Camp #598](https://github.com/PFCCLab/Camp/pull/598)）
 - [x] Week 2 周报（已提交 [PFCCLab/Camp #609](https://github.com/PFCCLab/Camp/pull/609)）
-- [ ] Week 3 周报
+- [ ] Week 3 周报（草稿已写：[`docs/周报/W3_2026-06-05.md`](docs/周报/W3_2026-06-05.md) + 邮件草稿；待开 PFCCLab/Camp PR + 发邮件）
 - [ ] Week 4 周报
 - [ ] Week 5 周报
 
