@@ -78,12 +78,12 @@
 
 **P0 — 必做交付物（按建议执行顺序）**
 
-- [ ] **W3 周报 PR + 邮件**（≤ 0.5 day，本周内）
-  - [ ] 在 [PFCCLab/Camp](https://github.com/PFCCLab/Camp) 开 W3 PR，把 `docs/周报/W3_2026-06-05.md` 内容贴到 `WeeklyReports/Hackathon_10th/ERNIEPartner/W3_2026-06-05.md`
-  - [ ] 发 W3 双周报邮件：按 `docs/周报/W3_2026-06-05.email.md` 模板，主题日期改成实际发送日（如 `0530`），正文里 PR 链接占位符替换成真实 URL
-  - [ ] 回头把"周报"段的 W3 状态打勾，附上 PR 编号
+- [x] **W3 周报 PR + 邮件**（≤ 0.5 day，本周内）
+  - [x] 在 [PFCCLab/Camp](https://github.com/PFCCLab/Camp) 开 W3 PR，把 `docs/周报/W3_2026-06-05.md` 内容贴到 `WeeklyReports/Hackathon_10th/ERNIEPartner/W3_2026-06-05.md`（[PFCCLab/Camp#617](https://github.com/PFCCLab/Camp/pull/617)）
+  - [ ] 发 W3 双周报邮件：按 `docs/周报/W3_2026-06-05.email.md` 模板，主题日期改成实际发送日 `0521`，正文里 PR 链接替换为 https://github.com/PFCCLab/Camp/pull/617
+  - [x] 回头把"周报"段的 W3 状态打勾，附上 PR 编号
 - [ ] **演示视频/录屏**（1 day）：terminal 跑通 `build_index.py` + `run_qa.py` 端到端 + 回答带 `[doc p.页]` 引用 + 性能输出截图，2~3 分钟（OBS / Windows 内置录屏均可）
-- [ ] **README 终稿**（0.5 day）：核对一遍 `openvino/README.md`——Windows 环境变量段（`HF_HUB_DISABLE_SYMLINKS` / `PYTHONIOENCODING` / `TESSDATA_PREFIX`）、IR 下载量（Qwen3-1.7B-int4 ≈ 1 GB / Qwen3-Embedding-0.6B-int8 ≈ 600 MB / PaddleOCR-VL-1.5 ≈ 2.7 GB）、磁盘需求、模型选型决策（BGE → Qwen3-Embedding）
+- [x] **README 终稿**（0.5 day）：核对 `openvino/README.md`——Windows 环境变量段、IR 下载量（Qwen3-1.7B-int4 ≈ 1 GB / Qwen3-Embedding-0.6B-int8 ≈ 600 MB / PaddleOCR-VL-1.5 ≈ 2.7 GB）、磁盘需求 8 GB、模型选型决策（BGE → Qwen3-Embedding）；顶层 README.md 同步更新进度表和周报表
 - [ ] **提交 PR 到 PFCCLab 仓库**（0.5 day）：6/5 前最晚 6/4 提交，预留半天 review 反馈窗口；PR body 引用 `openvino/README.md` 的 Phase 3 章节作为主证据
 
 **P2 加分项（时间不够直接砍，按 ROI 排序）**
@@ -119,7 +119,7 @@
 
 - [x] Week 1 周报（已提交 [PFCCLab/Camp #598](https://github.com/PFCCLab/Camp/pull/598)）
 - [x] Week 2 周报（已提交 [PFCCLab/Camp #609](https://github.com/PFCCLab/Camp/pull/609)）
-- [ ] **Week 3 周报（待发 — W4 第一项 P0）**：草稿已写 [`docs/周报/W3_2026-06-05.md`](docs/周报/W3_2026-06-05.md) + 邮件草稿 [`docs/周报/W3_2026-06-05.email.md`](docs/周报/W3_2026-06-05.email.md)；待开 PFCCLab/Camp PR + 发邮件，回头补 PR 编号
+- [x] Week 3 周报（已提交 [PFCCLab/Camp#617](https://github.com/PFCCLab/Camp/pull/617)）
 
 > 周报是按双周（W1 5/8 / W2 5/22 / W3 6/5）提交，本期 W3 为收官周报。若 W4 主线 PR 提交后官方仍要求继续周报，再补 Week 4 / Week 5。
 

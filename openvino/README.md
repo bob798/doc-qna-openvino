@@ -160,11 +160,15 @@ python scripts/run_phase2_pipeline.py --pdf_dir data/test_documents --out result
 
 ### 模型选择
 
-| 角色 | 模型 ID | 设备 | 备注 |
-|------|---------|------|------|
-| Embedding | `OpenVINO/Qwen3-Embedding-0.6B-int8-ov` | CPU / GPU | 1024 维，多语言含中文，官方预转 INT8 IR |
-| LLM | `OpenVINO/Qwen3-1.7B-int4-ov` | CPU / GPU | 通过 `openvino_genai.LLMPipeline` 加载，`enable_thinking=False` |
-| 向量库 | ChromaDB Persistent | — | cosine 距离，`chroma_db/` 目录 |
+| 角色 | 模型 ID | 设备 | 下载量 | 备注 |
+|------|---------|------|--------|------|
+| OCR | `zhaohb/PaddleOCR-VL-1.5-ov` | CPU / GPU | ~2.7 GB | INT4 LLM + INT8 Vision + PP-DocLayoutV3 |
+| Embedding | `OpenVINO/Qwen3-Embedding-0.6B-int8-ov` | CPU / GPU | ~600 MB | 1024 维，多语言含中文，官方预转 INT8 IR |
+| LLM | `OpenVINO/Qwen3-1.7B-int4-ov` | CPU / GPU | ~1 GB | 通过 `openvino_genai.LLMPipeline` 加载，`enable_thinking=False` |
+| 向量库 | ChromaDB Persistent | — | — | cosine 距离，`chroma_db/` 目录 |
+
+> **磁盘需求**：三个模型 IR 合计约 4.3 GB（首次运行自动下载到 HF cache）。加上
+> Python 虚拟环境和 ChromaDB 持久化目录，建议预留 **8 GB** 可用空间。
 
 > **关于"BGE-small-zh"**：原计划用 BAAI/bge-small-zh-v1.5 + OV 转换。`OpenVINO/`
 > 官方仓库当前没有该模型的预转 INT8 IR，本项目为了与 Phase 1/2 保持"全程官方
@@ -419,10 +423,20 @@ diff 文件 / 原图副本，便于在最终 README/Notebook 引用截图）。
 
 ---
 
-## 后续 Phase
+## 已完成 Phase 汇总
 
-- **W4 (Phase 4)**：Tesseract vs PaddleOCR-VL 少量页对比 + Demo 视频 + README 终稿
-- **W5 (Phase 5)**：PR 提交（PFCCLab 仓库）+ Notebook + 演示视频终稿
-- **加分项 (P2/P3)**：BGE-reranker 重排、NPU 路径尝试、Gradio UI、OmniDocBench 子集
+| Phase | 内容 | 状态 |
+|-------|------|:----:|
+| 1 | 环境搭建 + 模型验证 + 推理 Benchmark（OV CPU/GPU 1.47×） | ✅ |
+| 2 | 文档解析 + 表格感知切片（GB/T 2423.1 14 页 → 87 chunks） | ✅ |
+| 3 | RAG 端到端问答（5 题 CPU ~3.3s/题，带 [doc p.页] 引用） | ✅ |
+| P1-1 | eval 集 5 题真实业务 PDF 验证 + small-embedder 偏差分析 | ✅ |
+| P1-2 | Tesseract vs PaddleOCR-VL 3 页对比（表格页相似度仅 9.55%） | ✅ |
 
-详见 [`../docs/项目计划.md`](../docs/项目计划.md) 与 [`../docs/开发手册.md`](../docs/开发手册.md)。
+## 待完成
+
+- 演示视频/录屏（2~3 分钟 terminal 端到端）
+- 提交 PR 到 PFCCLab 仓库（6/5 截止）
+- 加分项（时间允许）：BGE-reranker 重排、NPU 路径尝试、Gradio UI、OmniDocBench 子集
+
+详见 [`../docs/项目计划.md`](../docs/项目计划.md) 与 [`../TODO.md`](../TODO.md)。

@@ -25,7 +25,7 @@ PDF / 图片
 [ 表格感知切片 ]    表头 + 行 chunk · 段落 200~500 字符 · 元数据 {doc, page, section}
    │
    ▼
-[ Embedding + 检索 ]  BGE-small (OpenVINO) → ChromaDB
+[ Embedding + 检索 ]  Qwen3-Embedding-0.6B-int8 (OpenVINO) → ChromaDB
    │
    ▼
 [ LLM 生成 ]        Qwen3 INT4 (OpenVINO GenAI) → 带来源引用的回答
@@ -48,7 +48,7 @@ doc-qna-openvino/
 │   ├── 打卡记录.md            打卡任务 #1 提交记录
 │   └── 周报/                  每周周报存档
 ├── openvino/                  代码主体（详见子目录 README）
-│   ├── README.md              Phase 1+2 运行指南
+│   ├── README.md              Phase 1~3 运行指南
 │   ├── requirements.txt
 │   ├── configs/models.json
 │   ├── src/                   推理封装 / PDF 预处理 / 解析 / 切片 / 管线
@@ -68,12 +68,18 @@ cd doc-qna-openvino/openvino
 python -m venv .venv && source .venv/bin/activate    # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-# 1. 准备 PaddleOCR-VL OpenVINO IR（参考 openvino/README.md）
-# 2. 跑 Phase 1 Benchmark
-python scripts/benchmark_inference.py
-python scripts/benchmark_ocr_quality.py
-# 3. 跑 Phase 2 端到端管线
+# Windows 用户需先设置环境变量（详见 openvino/README.md § 一次性准备）
+# $env:PYTHONIOENCODING = "utf-8"
+# $env:HF_HUB_DISABLE_SYMLINKS = "1"
+
+# 1. 准备 PaddleOCR-VL OpenVINO IR（参考 openvino/README.md § 准备工作）
+# 2. Phase 1 — 推理 Benchmark
+python scripts/benchmark_inference.py --image_dir data/test_images --device CPU
+# 3. Phase 2 — 文档解析 + 表格感知切片
 python scripts/run_phase2_pipeline.py --pdf_dir data/test_documents --out results/phase2
+# 4. Phase 3 — RAG 端到端问答
+python scripts/build_index.py --chunks_dir results/phase2 --persist_dir chroma_db --device CPU --reset
+python scripts/run_qa.py --questions_file data/demo_questions.txt --persist_dir chroma_db --out results/phase3/qa_run.json
 ```
 
 详细说明见 [`openvino/README.md`](openvino/README.md)。
@@ -84,11 +90,11 @@ python scripts/run_phase2_pipeline.py --pdf_dir data/test_documents --out result
 
 | Phase | 内容 | 状态 |
 |-------|------|------|
-| 1 | 环境搭建 + 模型验证 + 推理 Benchmark | 🔄 代码完成，待 IR 落地后跑实测数据 |
-| 2 | 文档解析 + 表格感知切片模块 | 🔄 代码完成，本地烟囱测试通过 |
-| 3 | RAG 问答链路（Embedding + ChromaDB + LLM） | ⬜ 未开始 |
-| 4 | Tesseract vs PaddleOCR-VL 对比评测 + 优化 | ⬜ 未开始 |
-| 5 | 整理 Notebook + README + requirements + 提交 | ⬜ 未开始 |
+| 1 | 环境搭建 + 模型验证 + 推理 Benchmark | ✅ OV CPU/GPU 实测落地（GPU/CPU 1.47×） |
+| 2 | 文档解析 + 表格感知切片模块 | ✅ 3 处切片器漏洞修复 + GB/T 2423.1 真实国标 14 页 87 chunks |
+| 3 | RAG 问答链路（Embedding + ChromaDB + LLM） | ✅ 端到端跑通，5 题 CPU ~3.3s/题，带 [doc p.页] 引用 |
+| 4 | Tesseract vs PaddleOCR-VL 对比评测 | ✅ 3 页代表性对比 + 5 题 eval 集业务验证 |
+| 5 | 整理 README + 演示视频 + 提交 PR | 🔄 README 终稿 + 演示视频 + PFCCLab PR |
 
 完整时间表见 [`docs/项目计划.md`](docs/项目计划.md)。
 
@@ -101,7 +107,8 @@ python scripts/run_phase2_pipeline.py --pdf_dir data/test_documents --out result
 | 周次 | 时间窗口 | PR | 本地存档 |
 |------|----------|----|----------|
 | W1 | 2026.04.25 ~ 2026.05.08 | [#598](https://github.com/PFCCLab/Camp/pull/598) | [`docs/周报/W1_2026-05-08.md`](docs/周报/W1_2026-05-08.md) |
-| W2 | 2026.05.09 ~ 2026.05.15 | _草稿_ | [`docs/周报/W2_2026-05-15.md`](docs/周报/W2_2026-05-15.md) |
+| W2 | 2026.05.09 ~ 2026.05.22 | [#609](https://github.com/PFCCLab/Camp/pull/609) | [`docs/周报/W2_2026-05-22.md`](docs/周报/W2_2026-05-22.md) |
+| W3 | 2026.05.23 ~ 2026.06.05 | [#617](https://github.com/PFCCLab/Camp/pull/617) | [`docs/周报/W3_2026-06-05.md`](docs/周报/W3_2026-06-05.md) |
 
 ---
 
