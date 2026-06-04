@@ -24,8 +24,8 @@ openvino/results/phase1/quality_compare*
 openvino/results/phase1/gpu/
 openvino/results/phase1/npu/
 openvino/results/phase2/*.markdown
-openvino/results/phase2/*.chunks.jsonl
-openvino/results/phase2/*.summary.json
+#openvino/results/phase2/*.chunks.jsonl
+#openvino/results/phase2/*.summary.json
 openvino/results/phase2/*.run.log
 openvino/results/phase2/phase2_overview.json
 openvino/results/phase2/phase2_run.log
