@@ -1,61 +1,45 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: Doc-QnA Demo - Windows Installer
-:: Clones repo (if needed), creates venv, installs dependencies
+:: Doc-QnA Demo - Windows 一键安装并运行
+:: 下载此文件，双击即可：clone → venv → pip install → 运行 demo
 
 set "INSTALL_DIR=%CD%\doc-qna-openvino"
 
-:: Check Git
-where git >nul 2>&1
-if %errorlevel% neq 0 (
-    echo ERROR: Git is not installed. Please install Git and try again.
-    exit /b
-)
+:: Check Git & Python
+where git >nul 2>&1 || (echo ERROR: Git is not installed. & exit /b)
+where python >nul 2>&1 || (echo ERROR: Python is not installed. & exit /b)
 
-:: Check Python
-where python >nul 2>&1
-if %errorlevel% neq 0 (
-    echo ERROR: Python is not installed. Please install Python 3.10-3.12 and try again.
-    exit /b
-)
-
-:: Clone repository
+:: Clone
 if not exist "%INSTALL_DIR%" (
     echo Cloning repository...
     git clone https://github.com/bob798/doc-qna-openvino.git "%INSTALL_DIR%"
 ) else (
-    echo Repository already exists. Pulling latest...
+    echo Repository exists. Pulling latest...
     cd /d "%INSTALL_DIR%" && git pull
 )
 
-:: Navigate to demo directory
 cd /d "%INSTALL_DIR%\openvino"
 
-:: Create virtual environment
-echo Creating virtual environment...
-python -m venv venv
-
-:: Activate
+:: Venv
+if not exist "venv\Scripts\activate.bat" (
+    echo Creating virtual environment...
+    python -m venv venv
+)
 call venv\Scripts\activate.bat
 
-:: Upgrade pip
-echo Upgrading pip...
-python -m pip install --upgrade pip
-
-:: Install dependencies
-echo Installing dependencies...
-pip install -r requirements.txt
-
-:: Set Windows environment variables
+:: Install + Run
 set PYTHONIOENCODING=utf-8
 set HF_HUB_DISABLE_SYMLINKS=1
 set HF_HUB_DISABLE_SYMLINKS_WARNING=1
 
+echo Installing dependencies...
+pip install --upgrade pip -q
+pip install -r requirements.txt -q
+
 echo.
-echo ========================================
-echo All requirements installed for Doc-QnA Demo.
-echo You can now run the demo!
-echo ========================================
+echo Running Doc-QnA Demo...
+python main.py
+
 pause
 exit

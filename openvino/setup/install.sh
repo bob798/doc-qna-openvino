@@ -1,42 +1,36 @@
 #!/usr/bin/env bash
-# Doc-QnA Demo - Linux/macOS Installer
+# Doc-QnA Demo - Linux/macOS 一键安装并运行
 set -e
 
 INSTALL_DIR="$PWD/doc-qna-openvino"
 
-# Check dependencies
-command -v git >/dev/null 2>&1 || { echo "ERROR: Git is not installed."; exit 1; }
-command -v python3 >/dev/null 2>&1 || { echo "ERROR: Python3 is not installed."; exit 1; }
+command -v git >/dev/null 2>&1 || { echo "ERROR: Git not installed."; exit 1; }
+command -v python3 >/dev/null 2>&1 || { echo "ERROR: Python3 not installed."; exit 1; }
 
-# Clone repository
+# Clone
 if [ ! -d "$INSTALL_DIR" ]; then
     echo "Cloning repository..."
     git clone https://github.com/bob798/doc-qna-openvino.git "$INSTALL_DIR"
 else
-    echo "Repository already exists. Pulling latest..."
+    echo "Repository exists. Pulling latest..."
     cd "$INSTALL_DIR" && git pull
 fi
 
-# Navigate to demo directory
 cd "$INSTALL_DIR/openvino"
 
-# Create virtual environment
-echo "Creating virtual environment..."
-python3 -m venv venv
-
-# Activate
+# Venv
+if [ ! -f "venv/bin/activate" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv venv
+fi
 source venv/bin/activate
 
-# Upgrade pip
-echo "Upgrading pip..."
-python -m pip install --upgrade pip
-
-# Install dependencies
+# Install + Run
+export PYTHONIOENCODING=utf-8
 echo "Installing dependencies..."
-pip install -r requirements.txt
+pip install --upgrade pip -q
+pip install -r requirements.txt -q
 
 echo
-echo "========================================"
-echo "All requirements installed for Doc-QnA Demo."
-echo "You can now run the demo!"
-echo "========================================"
+echo "Running Doc-QnA Demo..."
+python main.py
