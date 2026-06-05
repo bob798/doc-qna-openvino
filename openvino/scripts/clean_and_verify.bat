@@ -43,7 +43,19 @@ if exist "build_index.summary.json" (
     echo   已删除 build_index.summary.json
 )
 
-echo   生成物清理完成
+REM 清理 HuggingFace 模型缓存（Embedding + LLM）
+echo   清理 HuggingFace 模型缓存...
+set "HF_CACHE=%USERPROFILE%\.cache\huggingface\hub"
+if exist "%HF_CACHE%\models--OpenVINO--Qwen3-Embedding-0.6B-int8-ov" (
+    rmdir /s /q "%HF_CACHE%\models--OpenVINO--Qwen3-Embedding-0.6B-int8-ov"
+    echo   已删除 Qwen3-Embedding-0.6B-int8-ov 缓存
+)
+if exist "%HF_CACHE%\models--OpenVINO--Qwen3-1.7B-int4-ov" (
+    rmdir /s /q "%HF_CACHE%\models--OpenVINO--Qwen3-1.7B-int4-ov"
+    echo   已删除 Qwen3-1.7B-int4-ov 缓存
+)
+
+echo   清理完成
 echo.
 
 REM ---------- Step 2: 确认源数据存在 ----------
