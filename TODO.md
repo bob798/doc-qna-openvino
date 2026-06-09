@@ -73,7 +73,7 @@
 
 ### W4 计划（2026-05-30 ~ 2026-06-05）— 最后冲刺，6/5 截止 ← 现在
 
-> 主线优先级：**周报 PR + 邮件 → 演示视频 → README 终稿 → 提交 PFCCLab PR**。
+> 主线优先级：**周报 PR + 邮件 → 演示视频 → README 终稿 → 提交 OpenVINO demo PR + 任务完成邮件**。
 > 加分项时间允许再做，不阻塞 P0。
 
 **P0 — 必做交付物（按建议执行顺序）**
@@ -84,7 +84,8 @@
   - [x] 回头把"周报"段的 W3 状态打勾，附上 PR 编号
 - [ ] **演示视频/录屏**（1 day）：terminal 跑通 `build_index.py` + `run_qa.py` 端到端 + 回答带 `[doc p.页]` 引用 + 性能输出截图，2~3 分钟（OBS / Windows 内置录屏均可）
 - [x] **README 终稿**（0.5 day）：核对 `openvino/README.md`——Windows 环境变量段、IR 下载量（Qwen3-1.7B-int4 ≈ 1 GB / Qwen3-Embedding-0.6B-int8 ≈ 600 MB / PaddleOCR-VL-1.5 ≈ 2.7 GB）、磁盘需求 8 GB、模型选型决策（BGE → Qwen3-Embedding）；顶层 README.md 同步更新进度表和周报表
-- [ ] **提交 PR 到 PFCCLab 仓库**（0.5 day）：6/5 前最晚 6/4 提交，预留半天 review 反馈窗口；PR body 引用 `openvino/README.md` 的 Phase 3 章节作为主证据
+- [x] **提交 PR 到 OpenVINO demo 仓库**：[openvinotoolkit/openvino_build_deploy#552](https://github.com/openvinotoolkit/openvino_build_deploy/pull/552)
+- [ ] **发送任务完成邮件**：草稿见 [`docs/任务完成提交.email.md`](docs/任务完成提交.email.md)，To `ext_paddle_oss@baidu.com` + Cc Intel 双邮箱
 
 **P2 加分项（时间不够直接砍，按 ROI 排序）**
 

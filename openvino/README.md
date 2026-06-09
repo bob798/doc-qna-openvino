@@ -433,10 +433,13 @@ diff 文件 / 原图副本，便于在最终 README/Notebook 引用截图）。
 | P1-1 | eval 集 5 题真实业务 PDF 验证 + small-embedder 偏差分析 | ✅ |
 | P1-2 | Tesseract vs PaddleOCR-VL 3 页对比（表格页相似度仅 9.55%） | ✅ |
 
-## 待完成
+## 提交
 
-- 演示视频/录屏（2~3 分钟 terminal 端到端）
-- 提交 PR 到 PFCCLab 仓库（6/5 截止）
-- 加分项（时间允许）：BGE-reranker 重排、NPU 路径尝试、Gradio UI、OmniDocBench 子集
+- OpenVINO demo 仓库 PR：[openvinotoolkit/openvino_build_deploy#552](https://github.com/openvinotoolkit/openvino_build_deploy/pull/552)
+- 任务完成提交邮件草稿：[`../docs/任务完成提交.email.md`](../docs/任务完成提交.email.md)
+
+## 加分项（时间允许）
+
+- BGE-reranker 重排、NPU 路径尝试、Gradio UI、OmniDocBench 子集
 
 详见 [`../docs/项目计划.md`](../docs/项目计划.md) 与 [`../TODO.md`](../TODO.md)。

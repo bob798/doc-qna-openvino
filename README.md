@@ -112,6 +112,13 @@ python scripts/run_qa.py --questions_file data/demo_questions.txt --persist_dir 
 
 ---
 
+## 提交
+
+- OpenVINO demo 仓库 PR：[openvinotoolkit/openvino_build_deploy#552](https://github.com/openvinotoolkit/openvino_build_deploy/pull/552)
+- 任务完成提交邮件：[`docs/任务完成提交.email.md`](docs/任务完成提交.email.md)
+
+---
+
 ## 链接
 
 - 赛道总览 Issue：https://github.com/PaddlePaddle/Paddle/issues/78485
