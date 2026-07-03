@@ -47,7 +47,9 @@ openvino/
 cd openvino
 python -m venv .venv && source .venv/bin/activate    # 或 conda
 pip install -r requirements.txt
-# Tesseract 需另装二进制（macOS：`brew install tesseract tesseract-lang`）
+# 可选：OCR 质量基线对比（仅评测脚本需要，默认 demo 不依赖）
+#   pip install pytesseract
+#   Tesseract 需另装二进制（macOS：`brew install tesseract tesseract-lang`）
 ```
 
 ### 2. 准备 PaddleOCR-VL 的 OpenVINO IR
@@ -253,6 +255,14 @@ python scripts/run_qa.py \
    切更小的 chunk；W4 加分项里会试用 BGE-reranker-base 重排候选。
 2. **Q3 风格的保守拒答**：严格 system prompt 下，模型会把"联系售后"这种简短指引
    判为"未提供处理方法"，这是抗幻觉的代价——保留这种取舍。
+3. **语义相近的半域外问题串台**：明显域外问题（如"珠峰高度"）能靠严格 prompt +
+   `--min_score` 相似度阈值正确拒答；但"域外实体 + 域内字段"的组合（如"火星探测器
+   的额定功率"）会以较高相似度命中"额定功率"所在 chunk，1.7B 模型可能忽略主体不一致
+   直接用本机参数作答。实测分数分布（Qwen3-Embedding-0.6B-int8，99 chunks 语料）：
+   域内 5 题 top-1 ∈ [0.722, 0.840]，域外 5 题 top-1 ∈ [0.237, 0.465]（火星探测器题
+   = 0.465 为域外最高）。默认 `--min_score 0.35` 只拦明显域外题；本语料上调到
+   `--min_score 0.5` 可连该串台题一起在进 LLM 前拦截且不误伤域内题，但阈值随语料
+   分布变化，通用解法仍是 reranker 或实体一致性校验（加分项方向）。
 
 ### 4. P1-1 真实评测 PDF 业务问题集（2 份 NVIDIA H100 Product Brief）
 
