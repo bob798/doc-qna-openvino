@@ -128,17 +128,19 @@ Q1–Q4 均答对且引用正确。Q5 则展示了一道最隐蔽的 silent fail
 
 抗串台专项测试（`scripts/eval_guard.py`，5 域内 + 7 域外/串台题）：**域内 5/5 正确作答，域外 7/7 正确拒答**（旧单阈值方案仅 2/7）。最难的一类"域外实体 + 域内字段"串台——如"火星探测器的额定功率""特斯拉 Model 3 的工作温度"——也被拦下：cross-encoder 把火星探测器题的相关度压到 0.043，主体接地守卫再兜住 reranker 给了 0.77 高分的特斯拉题（"Model"/"特斯拉"不在任何证据里 → 拒答）。
 
-![启动横幅与索引构建：main.py 打印模型清单后运行 build_index.py，99 个 chunk 入库 ChromaDB](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo1.png)
+![启动横幅与索引构建：main.py 打印模型清单 + 守卫状态（reranker/entity_check），复用 99 chunk 的 ChromaDB 索引](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo1.png)
 
-![5 题问答启动：表格行级 chunk 命中工作温度 / 额定功率等单元格级事实](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo2.png)
+![Q1/Q2 表格行级 chunk 命中：工作温度 -20~70℃、额定功率 500W，每条命中附 bi-encoder score 与 cross-encoder rerank 分](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo2.png)
 
-![Q3 保守拒答 + GB/T 2423.1—2008 国标编号问答，每条答案附 [文档名 p.页码] 引用](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo3.png)
+![Q3 正确作答"应立即联系售后"（重排让证据更干净）+ Q4 国际标准编号 IEC 60068-2-1:2007，均附 [文档名 p.页码] 引用](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo3.png)
 
-![表格感知切片：A300 额定功率 500W 等答案直接定位到规格表单元格](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo4.png)
+![Q5 答案数值接地守卫拦截幻觉：模型想拿标准年份编造"2008年1月1日"，因证据中无法核实被改判"文档中未提及"](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo4.png)
 
-![完整 5 题端到端跑通，底部为运行录屏回放](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo5.png)
+![域外实体串台实测：问"特斯拉 Model 3 的工作温度"，reranker 虽给 0.770，主体接地守卫发现"Model"不在证据 → 拒答（llm=0ms 未进 LLM）](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo5.png)
 
-> 完整运行录屏：[assets/demo.mp4](https://github.com/bob798/doc-qna-openvino/blob/main/assets/demo.mp4)（GitHub 内嵌播放器可直接观看）。
+![抗串台分离度评测（scripts/eval_guard.py）：域内 5/5 正确作答、域外 7/7 正确拒答，逐题标注由哪级守卫拦下](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo6.png)
+
+> 运行录屏 `assets/demo.mp4` 为早期版本（未含重排/守卫），如需可按最新流程重录后覆盖。
 
 ### 性能（Intel i5，纯 CPU）
 
