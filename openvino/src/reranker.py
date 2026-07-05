@@ -156,7 +156,13 @@ class OpenVINOReranker:
             result = self.compiled(inputs)
             t_inf_total += (time.perf_counter() - t_inf) * 1000
 
-            logits = np.asarray(result[self.output_port]).reshape(-1)
+            out = np.asarray(result[self.output_port])
+            # 默认 bge-reranker 输出 [B,1] logits；若换成 [B,2] 双标签模型，取正类列，
+            # 不能盲目 flatten（否则把 2B 个数当成 B 个 pair 的分数）
+            if out.ndim == 2 and out.shape[1] > 1:
+                logits = out[:, -1]
+            else:
+                logits = out.reshape(-1)
             logits_out.append(logits)
 
         logits = np.concatenate(logits_out, axis=0)

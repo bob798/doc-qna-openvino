@@ -122,6 +122,8 @@ class RAGPipeline:
         entity_gate: Optional[EntityGate] = None,
         retrieve_top_k: int = 20,
         rerank_min_score: float = 0.30,
+        subject_grounding: bool = True,
+        answer_grounding: bool = True,
     ):
         self.embedder = embedder
         self.store = store
@@ -141,6 +143,10 @@ class RAGPipeline:
         #   3) rerank_min_score：重排后 Top 全部低于该值 → 判定文档未覆盖，拒答
         self.reranker = reranker
         self.entity_gate = entity_gate
+        # 主体接地 / 答案数值接地是**独立**守卫（各自用 module 函数、不依赖 entity_gate 对象），
+        # 单独用开关控制——否则关掉实体码检查会连带把抗幻觉的答案接地也悄悄关了。
+        self.subject_grounding = subject_grounding
+        self.answer_grounding = answer_grounding
         # bi-encoder 先召回这么多候选，再交给 reranker 精排（召回宽、精排准）
         self.retrieve_top_k = max(retrieve_top_k, top_k)
         self.rerank_min_score = rerank_min_score
@@ -222,7 +228,7 @@ class RAGPipeline:
         # 2.7) 主体接地守卫：reranker 拦不住的强字段串台（特斯拉 Model 3 的工作温度，
         #      精排 0.77 甚至高过弱召回的域内题）——若 query 的主体词全都没出现在证据里，
         #      判定问的是文档没有的东西，拒答。极保守：只在"全未接地"时才拦。
-        if self.entity_gate is not None and kept:
+        if self.subject_grounding and kept:
             ungrounded = check_grounding(question, [h.text for h in kept])
             if ungrounded is not None:
                 return self._refuse(
@@ -264,7 +270,7 @@ class RAGPipeline:
 
         # 4) 答案数值接地：模型可能从"主体对、内容不含答案"的 chunk 里编出具体日期/数字
         #    （Q5 实施日期即如此）——回答里的硬事实若无法在证据中核实，改判拒答。
-        if self.entity_gate is not None:
+        if self.answer_grounding:
             bad = answer_grounding.check_answer_grounding(answer_text, context, question)
             if bad is not None:
                 answer_text = answer_grounding.refusal_text(bad)

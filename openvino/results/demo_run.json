@@ -9,16 +9,18 @@
     "min_score": 0.0,
     "rerank_min_score": 0.3,
     "entity_check": true,
+    "subject_check": true,
+    "answer_check": true,
     "max_new_tokens": 384
   },
   "summary": {
     "n_questions": 5,
-    "total_run_ms": 14682.2,
-    "avg_total_ms": 2936.3,
-    "avg_embed_ms": 65.6,
-    "avg_retrieve_ms": 1.6,
-    "avg_llm_ms": 2275.3,
-    "avg_tps": 19.8
+    "total_run_ms": 15560.2,
+    "avg_total_ms": 3111.9,
+    "avg_embed_ms": 68.5,
+    "avg_retrieve_ms": 1.8,
+    "avg_llm_ms": 2381.4,
+    "avg_tps": 18.9
   },
   "results": [
     {
@@ -37,13 +39,13 @@
         }
       ],
       "timing": {
-        "embed_query_ms": 145.2,
-        "retrieve_ms": 1.9,
-        "rerank_ms": 533.3,
-        "llm_ms": 3146.5,
-        "total_ms": 3827.1,
+        "embed_query_ms": 146.7,
+        "retrieve_ms": 1.8,
+        "rerank_ms": 578.3,
+        "llm_ms": 3217.0,
+        "total_ms": 3944.0,
         "new_tokens": 27,
-        "tokens_per_second": 9.4
+        "tokens_per_second": 9.1
       }
     },
     {
@@ -62,13 +64,13 @@
         }
       ],
       "timing": {
-        "embed_query_ms": 41.9,
-        "retrieve_ms": 1.5,
-        "rerank_ms": 519.0,
-        "llm_ms": 1069.3,
-        "total_ms": 1631.9,
+        "embed_query_ms": 41.6,
+        "retrieve_ms": 1.9,
+        "rerank_ms": 582.8,
+        "llm_ms": 1129.6,
+        "total_ms": 1756.1,
         "new_tokens": 26,
-        "tokens_per_second": 24.3
+        "tokens_per_second": 23.0
       }
     },
     {
@@ -87,13 +89,13 @@
         }
       ],
       "timing": {
-        "embed_query_ms": 44.6,
-        "retrieve_ms": 1.5,
-        "rerank_ms": 603.9,
-        "llm_ms": 1131.4,
-        "total_ms": 1781.5,
+        "embed_query_ms": 46.5,
+        "retrieve_ms": 1.7,
+        "rerank_ms": 644.1,
+        "llm_ms": 1164.2,
+        "total_ms": 1856.7,
         "new_tokens": 28,
-        "tokens_per_second": 24.8
+        "tokens_per_second": 24.1
       }
     },
     {
@@ -148,13 +150,13 @@
         }
       ],
       "timing": {
-        "embed_query_ms": 53.9,
-        "retrieve_ms": 1.6,
-        "rerank_ms": 661.8,
-        "llm_ms": 4231.7,
-        "total_ms": 4949.4,
+        "embed_query_ms": 65.6,
+        "retrieve_ms": 1.9,
+        "rerank_ms": 764.8,
+        "llm_ms": 4506.6,
+        "total_ms": 5339.2,
         "new_tokens": 53,
-        "tokens_per_second": 12.5
+        "tokens_per_second": 11.8
       }
     },
     {
@@ -173,13 +175,13 @@
         }
       ],
       "timing": {
-        "embed_query_ms": 42.4,
-        "retrieve_ms": 1.5,
-        "rerank_ms": 649.5,
-        "llm_ms": 1797.8,
-        "total_ms": 2491.4,
+        "embed_query_ms": 42.0,
+        "retrieve_ms": 1.7,
+        "rerank_ms": 729.6,
+        "llm_ms": 1889.8,
+        "total_ms": 2663.3,
         "new_tokens": 50,
-        "tokens_per_second": 27.8
+        "tokens_per_second": 26.5
       }
     }
   ]

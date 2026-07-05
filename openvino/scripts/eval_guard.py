@@ -110,15 +110,19 @@ def main():
         qr = store.query(q, qvec, top_k=args.retrieve_top_k)
         bi_top1 = max((h.score for h in qr.hits), default=0.0)
         rr_top1 = 0.0
-        top5 = []
+        survivor_passages = []
         if qr.hits:
             order = reranker.rerank(q, [h.text for h in qr.hits])
             rr_top1 = float(order[0][1])
-            top5 = [qr.hits[i].text for i, _ in order[:5]]
+            # 与 RAGPipeline 完全一致：主体接地只跑在过阈值的 survivors[:5] 上，
+            # 不是全体 reranked 的 top-5（否则评测会认证生产不复现的行为）
+            survivor_passages = [
+                qr.hits[i].text for i, s in order if s >= args.rerank_min_score
+            ][:5]
 
         old_decision = "ANSWER" if bi_top1 >= args.old_min_score else "REFUSE"
         # 与 RAGPipeline 同序：实体码 → 重排阈值 → 主体接地
-        ungrounded = check_grounding(q, top5) if top5 else None
+        ungrounded = check_grounding(q, survivor_passages) if survivor_passages else None
         if ent is not None:
             new_decision, guard = "REFUSE", f"entity:{ent[1]}"
         elif rr_top1 < args.rerank_min_score:

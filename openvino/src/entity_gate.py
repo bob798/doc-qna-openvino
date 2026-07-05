@@ -34,16 +34,26 @@ _STANDARD_RE = re.compile(
     re.IGNORECASE,
 )
 # 产品型号码：1~3 个字母 + 2~4 位数字，可带 -/空格 后缀（H100 PCIe / H100-NVL）。
-# 要求首字母大写，避免误抓中文里夹的英文小词。
-_MODEL_RE = re.compile(r"\b[A-Z]{1,3}\d{2,4}(?:[-\s][A-Za-z]{2,5})?\b")
+# 用 ASCII 前后瞻代替 \b：中文是 Unicode 单词字符，\b 在 "A500的" 的 0/的 之间不成立，
+# 会漏掉粘连中文的型号（假实体逃逸）；(?<![A-Za-z0-9]) / (?![A-Za-z0-9]) 把中文视作边界。
+_MODEL_RE = re.compile(r"(?<![A-Za-z0-9])[A-Z]{1,3}\d{2,4}(?:[-\s][A-Za-z]{2,5})?(?![A-Za-z0-9])")
+_MODEL_BASE_RE = re.compile(r"^([A-Z]{1,3})(\d{2,4})")
 
 
 def _norm_standard(s: str) -> str:
-    """标准号归一化：大写、去空格、各种破折号统一成 '-'。"""
+    """标准号归一化：大写、去空格与 '/'（GB/T→GBT）、各种破折号统一成 '-'。"""
     s = s.upper()
     s = re.sub(r"[—–−~]", "-", s)
-    s = re.sub(r"\s+", "", s)
+    s = re.sub(r"[\s/]+", "", s)
     return s
+
+
+def _std_parts(s: str) -> Tuple[str, str]:
+    """拆成 (家族字母, 数字核心)：GBT2423.1 → ('GBT','2423.1')，容忍 GB vs GB/T。"""
+    norm = _norm_standard(s)
+    m = re.match(r"([A-Z]+)", norm)
+    letters = m.group(1) if m else ""
+    return letters, norm[len(letters):]
 
 
 def _norm_model(s: str) -> str:
@@ -51,6 +61,11 @@ def _norm_model(s: str) -> str:
     s = s.upper().replace("-", " ")
     s = re.sub(r"\s+", " ", s).strip()
     return s
+
+
+def _model_base(s: str) -> str:
+    """取型号基码（首段字母+数字）：'H100 PCIE' → 'H100'，'A500' → 'A500'。"""
+    return _norm_model(s).split(" ")[0]
 
 
 def _extract(text: str) -> Dict[str, Set[str]]:
@@ -88,10 +103,16 @@ class EntityGate:
         return cls(known=known)
 
     def _standard_known(self, q_std: str) -> bool:
-        """前缀双向匹配：query 标准号是某已知号前缀，或反之。"""
+        """数字核心前缀匹配 + 家族字母兼容（容忍 GB vs GB/T、年份有无）。"""
+        q_let, q_core = _std_parts(q_std)
         for k in self.known["standard"]:
-            lo = min(len(k), len(q_std))
-            if lo >= self.min_prefix and (k.startswith(q_std) or q_std.startswith(k)):
+            k_let, k_core = _std_parts(k)
+            fam_ok = k_let.startswith(q_let) or q_let.startswith(k_let)
+            lo = min(len(k_core), len(q_core))
+            core_ok = lo >= self.min_prefix and (
+                k_core.startswith(q_core) or q_core.startswith(k_core)
+            )
+            if fam_ok and core_ok:
                 return True
         return False
 
@@ -106,10 +127,20 @@ class EntityGate:
             if self.known["standard"] and not self._standard_known(std):
                 return ("standard", std)
 
+        # 型号：按"基码 + 字母前缀家族"判定，而非整串精确匹配——
+        #   · 'H100' 命中语料的 'H100 PCIe'（同基码）→ 放行（修复裸型号误拒）；
+        #   · 'A500' 与已知 A100/A200/A300 同字母家族但基码没有 → 判伪实体拒答；
+        #   · 'RS485'/'IP67' 字母前缀不属任何已知家族 → 不当型号处理，放行（避免误伤接口名）。
+        known_bases = {_model_base(m) for m in self.known["model"]}
+        known_prefixes = {_MODEL_BASE_RE.match(b).group(1)
+                          for b in known_bases if _MODEL_BASE_RE.match(b)}
         for mdl in q["model"]:
-            # 型号要求精确命中；语料没有任何型号时不启用该家族（避免误伤）
-            if self.known["model"] and mdl not in self.known["model"]:
-                return ("model", mdl)
+            base = _model_base(mdl)
+            if base in known_bases:
+                continue
+            pm = _MODEL_BASE_RE.match(base)
+            if pm and pm.group(1) in known_prefixes:
+                return ("model", base)  # 同家族的伪型号（A500）
 
         return None
 
@@ -167,6 +198,21 @@ def subject_terms(query: str) -> List[str]:
     return out
 
 
+def _term_grounded(term: str, evidence: str) -> bool:
+    """主体词是否接地：整词命中即可；较长的中文主体容忍表述差异，
+    只要有一段 ≥3 字的连续子串出现在证据里也算接地（'长江三峡大坝' vs 证据 '三峡大坝'）。"""
+    t = term.lower()
+    if t in evidence:
+        return True
+    # 仅对 ≥4 字的中文主体做子串放宽，避免拉丁短词/短名误接地
+    if len(term) >= 4 and _CJK_RE.fullmatch(term):
+        for size in range(len(term) - 1, 2, -1):  # 从长到短，最短 3 字
+            for i in range(len(term) - size + 1):
+                if term[i:i + size].lower() in evidence:
+                    return True
+    return False
+
+
 def check_grounding(query: str, passages: List[str]) -> Optional[str]:
     """
     返回 None 表示主体已接地（放行）；否则返回未接地的主体词（应拒答）。
@@ -177,6 +223,6 @@ def check_grounding(query: str, passages: List[str]) -> Optional[str]:
         return None  # 抽不出主体，不做判断（交给别的守卫）
     evidence = "\n".join(passages).lower()
     for t in terms:
-        if t.lower() in evidence:
+        if _term_grounded(t, evidence):
             return None  # 有任意主体词接地 → 放行
     return terms[0]  # 全部未接地 → 用第一个主体词说明拒答理由

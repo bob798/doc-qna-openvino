@@ -100,14 +100,19 @@ def parse_args():
                    help="最终进入 LLM 上下文的 chunk 数")
     p.add_argument("--retrieve_top_k", type=int, default=20,
                    help="bi-encoder 先召回的候选数（再交给 reranker 精排收敛到 top_k）")
-    p.add_argument("--min_score", type=float, default=0.0,
-                   help="bi-encoder 检索相似度粗筛下限（0 关闭；精排开启后主力交给 reranker）")
+    p.add_argument("--min_score", type=float, default=None,
+                   help="bi-encoder 检索相似度粗筛下限（缺省：开重排=0.0 交给精排；"
+                        "--no_reranker 时=0.35 保留 bi-encoder 兜底拒答）")
     p.add_argument("--rerank_min_score", type=float, default=0.30,
                    help="reranker 精排相关度下限，重排后全部低于该值直接拒答（拦域外实体+域内字段串台）")
     p.add_argument("--no_reranker", action="store_true",
-                   help="关闭 cross-encoder 重排（退回纯 bi-encoder + min_score 行为）")
+                   help="关闭 cross-encoder 重排（退回纯 bi-encoder + min_score 行为，min_score 缺省转 0.35）")
     p.add_argument("--no_entity_check", action="store_true",
-                   help="关闭实体一致性守卫（对 A500/未知标准号等伪实体的确定性兜底）")
+                   help="仅关闭实体码一致性守卫（A500/未知标准号伪实体的确定性兜底）")
+    p.add_argument("--no_subject_check", action="store_true",
+                   help="关闭主体接地守卫（query 主体不在证据里则拒答）")
+    p.add_argument("--no_answer_check", action="store_true",
+                   help="关闭答案数值接地守卫（回答里的日期/数字须在证据中可核实，否则改判拒答）")
     p.add_argument("--max_new_tokens", type=int, default=384)
 
     # 输出（缺省时按运行模式选择，见 resolve_output_paths：
@@ -115,7 +120,12 @@ def parse_args():
     # 避免单题运行覆盖 5 题结果文件）
     p.add_argument("--out", type=str, default=None)
     p.add_argument("--out_md", type=str, default=None)
-    return p.parse_args()
+    args = p.parse_args()
+    # min_score 缺省随是否开重排而定：开重排交给精排（0.0 不预筛，免得误杀 bi-encoder
+    # 偏低但重排偏高的真答案）；关重排时必须保留 0.35 的 bi-encoder 兜底拒答网。
+    if args.min_score is None:
+        args.min_score = 0.35 if args.no_reranker else 0.0
+    return args
 
 
 def resolve_output_paths(args):
@@ -242,6 +252,8 @@ def save_results(args, results, total_run, store_count):
             "min_score": args.min_score,
             "rerank_min_score": None if args.no_reranker else args.rerank_min_score,
             "entity_check": not args.no_entity_check,
+            "subject_check": not args.no_subject_check,
+            "answer_check": not args.no_answer_check,
             "max_new_tokens": args.max_new_tokens,
         },
         "summary": {
@@ -382,6 +394,8 @@ def main():
         entity_gate=entity_gate,
         retrieve_top_k=args.retrieve_top_k,
         rerank_min_score=args.rerank_min_score,
+        subject_grounding=not args.no_subject_check,
+        answer_grounding=not args.no_answer_check,
     )
 
     # 运行问答

@@ -9,11 +9,11 @@
 
 | 阶段 | 平均耗时 (ms) |
 |------|---------------|
-| embed query | 65.6 |
-| retrieve | 1.6 |
-| LLM | 2275.3 |
-| **total** | **2936.3** |
-| LLM throughput | 19.8 tok/s |
+| embed query | 68.5 |
+| retrieve | 1.8 |
+| LLM | 2381.4 |
+| **total** | **3111.9** |
+| LLM throughput | 18.9 tok/s |
 
 ## 问答详情
 
@@ -27,7 +27,7 @@
 
 - `[spec_with_tables p.1]` score=0.840 — | 型号 | 功率 | 工作温度 | | --- | --- | --- | | A100 | 300W | -20~70℃ |
 
-⏱ embed=145.2ms  retrieve=1.9ms  llm=3146.5ms  total=3827.1ms  new_tokens=27  tps=9.4
+⏱ embed=146.7ms  retrieve=1.8ms  llm=3217.0ms  total=3944.0ms  new_tokens=27  tps=9.1
 
 ---
 
@@ -41,7 +41,7 @@
 
 - `[spec_with_tables p.1]` score=0.729 — | 型号 | 功率 | 工作温度 | | --- | --- | --- | | A300 | 500W | 0~50℃ |
 
-⏱ embed=41.9ms  retrieve=1.5ms  llm=1069.3ms  total=1631.9ms  new_tokens=26  tps=24.3
+⏱ embed=41.6ms  retrieve=1.9ms  llm=1129.6ms  total=1756.1ms  new_tokens=26  tps=23.0
 
 ---
 
@@ -55,7 +55,7 @@
 
 - `[spec_with_tables p.1]` score=0.839 — ## 故障代码  请参考下表常见故障代码与处理方式。 如遇代码 E01/E02 请立即联系售后。
 
-⏱ embed=44.6ms  retrieve=1.5ms  llm=1131.4ms  total=1781.5ms  new_tokens=28  tps=24.8
+⏱ embed=46.5ms  retrieve=1.7ms  llm=1164.2ms  total=1856.7ms  new_tokens=28  tps=24.1
 
 ---
 
@@ -73,7 +73,7 @@
 - `[gb_t_2423_1 p.11]` score=0.597 — (IEC 60068-2-14:1984,IDT)  GB/T 2423.24—1995 电工电子产品环境试验 第2部分：试验方法 试验Sa：模拟试验  GB/T 2423.25—2008 电工电子产品环境试验 第2部分：试验方法 试验 Z
 - `[gb_t_2423_1 p.3]` score=0.594 — 一删除了试验Aa:非散热试验样品温度实验  一删除了附录 A、附录 B、附录 C、附录 D  增加试验 Ae: 散热试验样品温度渐变的低温试验试验  本部分附录 NA、附录 NB 为资料性附录  本部分由全国电工电子产品环境条件与环境试验标
 
-⏱ embed=53.9ms  retrieve=1.6ms  llm=4231.7ms  total=4949.4ms  new_tokens=53  tps=12.5
+⏱ embed=65.6ms  retrieve=1.9ms  llm=4506.6ms  total=5339.2ms  new_tokens=53  tps=11.8
 
 ---
 
@@ -87,6 +87,6 @@
 
 - `[gb_t_2423_1 p.1]` score=0.721 — ICS 19.040  K 04  中华人民共和国国家机  GB/T 2423.1—2008/IEC 60068-2-1.2  代替 GB/T 2423.1—2001
 
-⏱ embed=42.4ms  retrieve=1.5ms  llm=1797.8ms  total=2491.4ms  new_tokens=50  tps=27.8
+⏱ embed=42.0ms  retrieve=1.7ms  llm=1889.8ms  total=2663.3ms  new_tokens=50  tps=26.5
 
 ---
