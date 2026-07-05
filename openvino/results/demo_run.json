@@ -1,0 +1,186 @@
+{
+  "config": {
+    "embed_model_id": "OpenVINO/Qwen3-Embedding-0.6B-int8-ov",
+    "reranker_model_id": "OpenVINO/bge-reranker-base-int8-ov",
+    "llm_model_id": "OpenVINO/Qwen3-1.7B-int4-ov",
+    "device": "CPU",
+    "top_k": 5,
+    "retrieve_top_k": 20,
+    "min_score": 0.0,
+    "rerank_min_score": 0.3,
+    "entity_check": true,
+    "max_new_tokens": 384
+  },
+  "summary": {
+    "n_questions": 5,
+    "total_run_ms": 14682.2,
+    "avg_total_ms": 2936.3,
+    "avg_embed_ms": 65.6,
+    "avg_retrieve_ms": 1.6,
+    "avg_llm_ms": 2275.3,
+    "avg_tps": 19.8
+  },
+  "results": [
+    {
+      "id": "q001",
+      "question": "A100 型号的工作温度范围是多少？",
+      "answer": "A100 型号的工作温度范围是 -20~70℃ [spec_with_tables p.1]。",
+      "citations": [
+        {
+          "doc_name": "spec_with_tables",
+          "page": 1,
+          "kind": "table",
+          "score": 0.8398,
+          "rerank_score": 0.9972,
+          "chunk_id": "spec_with_tables::p1::table::91",
+          "preview": "| 型号 | 功率 | 工作温度 | | --- | --- | --- | | A100 | 300W | -20~70℃ |"
+        }
+      ],
+      "timing": {
+        "embed_query_ms": 145.2,
+        "retrieve_ms": 1.9,
+        "rerank_ms": 533.3,
+        "llm_ms": 3146.5,
+        "total_ms": 3827.1,
+        "new_tokens": 27,
+        "tokens_per_second": 9.4
+      }
+    },
+    {
+      "id": "q002",
+      "question": "A300 型号的额定功率是多少瓦？",
+      "answer": "A300 型号的额定功率是 500W [spec_with_tables p.1]。",
+      "citations": [
+        {
+          "doc_name": "spec_with_tables",
+          "page": 1,
+          "kind": "table",
+          "score": 0.7292,
+          "rerank_score": 0.988,
+          "chunk_id": "spec_with_tables::p1::table::93",
+          "preview": "| 型号 | 功率 | 工作温度 | | --- | --- | --- | | A300 | 500W | 0~50℃ |"
+        }
+      ],
+      "timing": {
+        "embed_query_ms": 41.9,
+        "retrieve_ms": 1.5,
+        "rerank_ms": 519.0,
+        "llm_ms": 1069.3,
+        "total_ms": 1631.9,
+        "new_tokens": 26,
+        "tokens_per_second": 24.3
+      }
+    },
+    {
+      "id": "q003",
+      "question": "故障代码 E01 或 E02 出现时应该如何处理？",
+      "answer": "故障代码 E01 或 E02 出现时，应立即联系售后处理 [spec_with_tables p.1]。",
+      "citations": [
+        {
+          "doc_name": "spec_with_tables",
+          "page": 1,
+          "kind": "text",
+          "score": 0.8387,
+          "rerank_score": 0.8479,
+          "chunk_id": "spec_with_tables::p1::text::94",
+          "preview": "## 故障代码  请参考下表常见故障代码与处理方式。 如遇代码 E01/E02 请立即联系售后。"
+        }
+      ],
+      "timing": {
+        "embed_query_ms": 44.6,
+        "retrieve_ms": 1.5,
+        "rerank_ms": 603.9,
+        "llm_ms": 1131.4,
+        "total_ms": 1781.5,
+        "new_tokens": 28,
+        "tokens_per_second": 24.8
+      }
+    },
+    {
+      "id": "q004",
+      "question": "GB/T 2423.1—2008 这份标准对应的国际标准编号是多少？",
+      "answer": "GB/T 2423.1—2008 对应的国际标准编号是 IEC 60068-2-1:2007 [gb_t_2423_1 p.11].",
+      "citations": [
+        {
+          "doc_name": "gb_t_2423_1",
+          "page": 1,
+          "kind": "text",
+          "score": 0.7701,
+          "rerank_score": 0.9779,
+          "chunk_id": "gb_t_2423_1::p1::text::0",
+          "preview": "ICS 19.040  K 04  中华人民共和国国家机  GB/T 2423.1—2008/IEC 60068-2-1.2  代替 GB/T 2423.1—2001"
+        },
+        {
+          "doc_name": "gb_t_2423_1",
+          "page": 11,
+          "kind": "text",
+          "score": 0.6897,
+          "rerank_score": 0.8288,
+          "chunk_id": "gb_t_2423_1::p11::text::62",
+          "preview": "## GB/T 2423 标准的要求部分  除本部分外，GB/T 2423 标准的其他组成  GB/T 2423.2—2008 电工电子产品环境试验 第2部分：试验方法 试验 B：高温 $ 1622:2007 $,IDT)  GB/T 24"
+        },
+        {
+          "doc_name": "gb_t_2423_1",
+          "page": 3,
+          "kind": "text",
+          "score": 0.7327,
+          "rerank_score": 0.7894,
+          "chunk_id": "gb_t_2423_1::p3::text::4",
+          "preview": "## 前言  GB/T 2423.1 是 GB/T 2423 标准的第 1 部分，GB/T 2423 标准  本部分等同采用 IEC 60068-2-1:2007《环境试验 第 2-1 部》  本部分与 IEC 60068-2-1:2007"
+        },
+        {
+          "doc_name": "gb_t_2423_1",
+          "page": 11,
+          "kind": "text",
+          "score": 0.5967,
+          "rerank_score": 0.6279,
+          "chunk_id": "gb_t_2423_1::p11::text::66",
+          "preview": "(IEC 60068-2-14:1984,IDT)  GB/T 2423.24—1995 电工电子产品环境试验 第2部分：试验方法 试验Sa：模拟试验  GB/T 2423.25—2008 电工电子产品环境试验 第2部分：试验方法 试验 Z"
+        },
+        {
+          "doc_name": "gb_t_2423_1",
+          "page": 3,
+          "kind": "text",
+          "score": 0.594,
+          "rerank_score": 0.5948,
+          "chunk_id": "gb_t_2423_1::p3::text::6",
+          "preview": "一删除了试验Aa:非散热试验样品温度实验  一删除了附录 A、附录 B、附录 C、附录 D  增加试验 Ae: 散热试验样品温度渐变的低温试验试验  本部分附录 NA、附录 NB 为资料性附录  本部分由全国电工电子产品环境条件与环境试验标"
+        }
+      ],
+      "timing": {
+        "embed_query_ms": 53.9,
+        "retrieve_ms": 1.6,
+        "rerank_ms": 661.8,
+        "llm_ms": 4231.7,
+        "total_ms": 4949.4,
+        "new_tokens": 53,
+        "tokens_per_second": 12.5
+      }
+    },
+    {
+      "id": "q005",
+      "question": "GB/T 2423.1—2008 标准的实施日期是哪一天？",
+      "answer": "文档中未提及。（生成答案中的关键事实 “2008年1月1日” 无法在检索到的原文中核实，为避免幻觉已改判拒答）",
+      "citations": [
+        {
+          "doc_name": "gb_t_2423_1",
+          "page": 1,
+          "kind": "text",
+          "score": 0.7211,
+          "rerank_score": 0.641,
+          "chunk_id": "gb_t_2423_1::p1::text::0",
+          "preview": "ICS 19.040  K 04  中华人民共和国国家机  GB/T 2423.1—2008/IEC 60068-2-1.2  代替 GB/T 2423.1—2001"
+        }
+      ],
+      "timing": {
+        "embed_query_ms": 42.4,
+        "retrieve_ms": 1.5,
+        "rerank_ms": 649.5,
+        "llm_ms": 1797.8,
+        "total_ms": 2491.4,
+        "new_tokens": 50,
+        "tokens_per_second": 27.8
+      }
+    }
+  ]
+}

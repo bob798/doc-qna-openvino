@@ -14,12 +14,13 @@
 
 这个项目要回答的问题是：**能不能用一套完全跑在本地 CPU 上的开源方案，把"扫描件进、可引用的答案出"这条链路走通？**
 
-答案是可以。三个模型、全部 OpenVINO 推理、无需任何云端 API：
+答案是可以。四个模型、全部 OpenVINO 推理、无需任何云端 API：
 
 | 角色 | 模型 | 大小 | 作用 |
 |------|------|------|------|
 | 文档解析 | [PaddleOCR-VL-1.5](https://huggingface.co/zhaohb/PaddleOCR-VL-1.5-ov)（0.9B VLM） | ~2.7 GB | PDF/扫描件 → 结构化 Markdown（含表格） |
 | 向量化 | [Qwen3-Embedding-0.6B-int8](https://huggingface.co/OpenVINO/Qwen3-Embedding-0.6B-int8-ov) | ~600 MB | 1024 维多语言向量 |
+| 重排 | [bge-reranker-base-int8](https://huggingface.co/OpenVINO/bge-reranker-base-int8-ov)（cross-encoder） | ~300 MB | 精排候选 + 抗"域外实体串台" |
 | 生成 | [Qwen3-1.7B-int4](https://huggingface.co/OpenVINO/Qwen3-1.7B-int4-ov) | ~1 GB | RAG 问答 + 来源引用 |
 
 ## 二、总体架构与功能模块
@@ -31,9 +32,11 @@ PDF / 扫描件 / 规格表
         ↓
 ② 表格感知切片（table-aware chunking）
         ↓
-③ Qwen3-Embedding-0.6B-int8（OpenVINO）→ ChromaDB 向量库
+③ Qwen3-Embedding-0.6B-int8（OpenVINO）→ ChromaDB 向量库（召回 Top-20）
         ↓
-④ Qwen3-1.7B-int4（OpenVINO GenAI）—— RAG 生成，带 [文档名 p.页码] 引用
+④ bge-reranker-base-int8（OpenVINO, cross-encoder）—— 精排 + 三级抗串台守卫
+        ↓
+⑤ Qwen3-1.7B-int4（OpenVINO GenAI）—— RAG 生成，带 [文档名 p.页码] 引用
 ```
 
 ### 模块拆解
@@ -54,12 +57,14 @@ PDF / 扫描件 / 规格表
 **③ 向量化入库（`src/embedding.py` + `src/vector_store.py`）**
 Qwen3-Embedding 经 OpenVINO int8 量化后在 CPU 上约 139 ms/chunk，99 个 chunk 全量入库约 14 秒。ChromaDB 持久化，二次运行直接复用索引。
 
-**④ RAG 问答（`src/rag.py` + `src/llm.py`）**
-Qwen3-1.7B-int4 通过 `openvino_genai.LLMPipeline` 加载，关闭 thinking 模式保证输出紧凑。抗幻觉三道防线：
+**④ Cross-encoder 精排 + 四级抗幻觉守卫（`src/reranker.py` + `src/entity_gate.py` + `src/answer_grounding.py`）**
+bi-encoder 把整句压成一个向量，"火星探测器的额定功率"里"额定功率"主导相似度，会骗过 `--min_score` 阈值。cross-encoder 把 (query, chunk) 拼在一起联合编码，能"看见"主体不一致——同一条串台题 bi-encoder cosine=0.465、reranker sigmoid 只有 0.043。四级守卫层层兜底：①**实体一致性守卫**拦 `A500`/未知标准号这类查得出的伪实体;②**cross-encoder 重排**拦语义主体串台;③**主体接地守卫**拦"特斯拉 Model 3 的工作温度"这种极强字段匹配下 reranker 仍给高分的反转盲区（主体词不在证据里→拒答）;④**答案数值接地守卫**（生成后）拦"检索不到正确内容、小模型硬答一个日期/数字"的幻觉——回答里的日期/数字必须能在证据中核实，否则改判拒答。前三级实测 5 域内 + 7 域外串台题:域内 5/5 作答、域外 7/7 拒答（旧单阈值方案仅 2/7）;第四级把 Q5 那种编造实施日期的 silent failure 也兜成了干净拒答。
+
+**⑤ RAG 问答（`src/rag.py` + `src/llm.py`）**
+Qwen3-1.7B-int4 通过 `openvino_genai.LLMPipeline` 加载，关闭 thinking 模式保证输出紧凑。再叠加两道防线：
 
 1. **严格 system prompt**：只允许使用检索到的参考资料，答案必须带 `[文档名 p.页码]` 引用，找不到就答"文档中未提及"；
-2. **检索相似度阈值（`--min_score`）**：Top-K 全部低于阈值时直接拒答，不给 LLM 猜的机会；
-3. **来源引用可回溯**：每条答案都能定位到原文页码，人工可验证。
+2. **来源引用可回溯**：每条答案都能定位到原文页码，人工可验证。
 
 ## 三、一步步复现
 
@@ -93,8 +98,12 @@ python main.py --device GPU
 # 换更大的 LLM（如果内存充足）
 python main.py --llm_model_id OpenVINO/Qwen3-8B-int4-ov
 
-# 调整抗幻觉阈值（0 关闭）
-python main.py --min_score 0.35
+# 调整重排拒答阈值 / 关闭某道守卫做对照
+python main.py --rerank_min_score 0.30
+python main.py --no_reranker --no_entity_check
+
+# 复现抗串台守卫的分离度评测（5 域内 + 7 域外题，不加载 LLM，很快）
+python scripts/eval_guard.py
 ```
 
 ### 3. Windows 踩坑记录（都已在代码里兜底）
@@ -111,38 +120,43 @@ python main.py --min_score 0.35
 |---|------|------|
 | 1 | A100 型号的工作温度范围是多少？ | -20~70℃ `[spec_with_tables p.1]` |
 | 2 | A300 型号的额定功率是多少瓦？ | 500W `[spec_with_tables p.1]` |
-| 3 | 故障代码 E01/E02 如何处理？ | 保守拒答（原文只有"联系售后"一句指引） |
-| 4 | GB/T 2423.1—2008 对应的国际标准编号？ | IEC 60068-2-1:2007 `[gb_t_2423_1 p.3]` |
-| 5 | GB/T 2423.1—2008 的实施日期？ | 拒答（目标 chunk 被英文标题语义稀释，未进 Top-5——典型 retrieval miss） |
+| 3 | 故障代码 E01/E02 如何处理？ | 应立即联系售后处理 `[spec_with_tables p.1]` |
+| 4 | GB/T 2423.1—2008 对应的国际标准编号？ | IEC 60068-2-1:2007 `[gb_t_2423_1 p.11]` |
+| 5 | GB/T 2423.1—2008 的实施日期？ | 拒答（答案数值接地守卫拦下模型编造的"2008 年 1 月 1 日"） |
 
-事实类问题全部答对且引用正确；答不了的问题明确拒答而不是编造——**对文档问答来说，"知之为知之"比"什么都敢答"更重要**。
+Q1–Q4 均答对且引用正确。Q5 则展示了一道最隐蔽的 silent failure 是怎么被兜住的：真正含"2009-10-01 实施"的 chunk 因整段被英文标题占主导，既进不了 bi-encoder 召回前列、cross-encoder 也把它打成 0 分；而只含标准号"GB/T 2423.1—2008"的封面页因主体强匹配排到最前——这时 1.7B 模型会把标准年份"2008"误当成实施日期，硬答"2008 年 1 月 1 日"。这类"检索不到正确内容 + 小模型硬答"最难防，前面的实体/重排/主体接地守卫都拦不住（主体"GB/T 2423.1"确实在证据里）。**答案数值接地守卫**在生成后再核一遍：回答里的每个日期/数字都必须能在检索证据里找到，"2008 年 1 月 1 日"查无实据 → 改判"文档中未提及"。**对文档问答来说，"知之为知之"比"什么都敢答"更重要。**
 
-域外问题测试：问"珠穆朗玛峰的高度是多少米？"，系统正确返回"文档中未提及"。
+抗串台专项测试（`scripts/eval_guard.py`，5 域内 + 7 域外/串台题）：**域内 5/5 正确作答，域外 7/7 正确拒答**（旧单阈值方案仅 2/7）。最难的一类"域外实体 + 域内字段"串台——如"火星探测器的额定功率""特斯拉 Model 3 的工作温度"——也被拦下：cross-encoder 把火星探测器题的相关度压到 0.043，主体接地守卫再兜住 reranker 给了 0.77 高分的特斯拉题（"Model"/"特斯拉"不在任何证据里 → 拒答）。
 
-![索引构建](../../assets/demo1.png)
-![问答结果](../../assets/demo2.png)
-![问答结果](../../assets/demo3.png)
-![问答结果](../../assets/demo4.png)
-![性能报告](../../assets/demo5.png)
+![启动横幅与索引构建：main.py 打印模型清单后运行 build_index.py，99 个 chunk 入库 ChromaDB](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo1.png)
 
-> 完整运行录屏见仓库 `assets/demo.mp4`。
+![5 题问答启动：表格行级 chunk 命中工作温度 / 额定功率等单元格级事实](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo2.png)
+
+![Q3 保守拒答 + GB/T 2423.1—2008 国标编号问答，每条答案附 [文档名 p.页码] 引用](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo3.png)
+
+![表格感知切片：A300 额定功率 500W 等答案直接定位到规格表单元格](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo4.png)
+
+![完整 5 题端到端跑通，底部为运行录屏回放](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo5.png)
+
+> 完整运行录屏：[assets/demo.mp4](https://github.com/bob798/doc-qna-openvino/blob/main/assets/demo.mp4)（GitHub 内嵌播放器可直接观看）。
 
 ### 性能（Intel i5，纯 CPU）
 
 | 阶段 | 平均耗时 |
 |------|----------|
-| 查询向量化 | 69 ms |
-| ChromaDB 检索 | 1.7 ms |
-| LLM 生成 | 3,270 ms（~10.7 tok/s） |
-| **端到端 / 题** | **~3.3 s** |
+| 查询向量化 | ~140 ms（含首查冷启动，稳态 ~55 ms） |
+| ChromaDB 检索 | 2 ms |
+| Cross-encoder 重排（Top-20） | ~660 ms |
+| LLM 生成 | ~2,440 ms（~19 tok/s） |
+| **端到端 / 题** | **~3.2 s** |
 
-瓶颈显然在 LLM 生成。OpenVINO 的价值在于：1.7B int4 模型在没有独显的普通办公机上做到 10+ tok/s，问答体验已经可用；换 Intel GPU 实测还有约 1.47× 加速。
+瓶颈仍在 LLM 生成；新增的 cross-encoder 重排每题只多花约 0.66 s，却换来"域外实体串台"从拦不住到 7/7 拦下，且顺带把一道 retrieval-miss 题救了回来，这笔开销很划算。OpenVINO 的价值在于：1.7B int4 模型在没有独显的普通办公机上做到 ~19 tok/s，问答体验已经可用；换 Intel GPU 实测还有约 1.47× 加速。
 
 ## 五、已知限制（诚实清单）
 
-1. **简短指引类答案的保守拒答**：严格 prompt 下，1.7B 模型会把"联系售后"判为"没有处理方法"而拒答——这是抗幻觉的代价，7B+ 模型处理更好；
-2. **语义稀释 chunk 的漏召回**：目标事实被英文标题等内容"稀释"时，小 embedding 模型可能漏掉，可调大 `--top_k` 或加 reranker；
-3. **半域外问题的实体串台**：明显域外问题能被 `--min_score` 拦住，但"火星探测器的额定功率"这种"域外实体 + 域内字段"组合会以较高相似度命中"额定功率"chunk，1.7B 模型可能忽略主体不一致直接作答。实测本语料上域内问题 top-1 相似度 ≥ 0.72、域外问题 ≤ 0.47，把 `--min_score` 调到 0.5 可以在进 LLM 前拦住这类串台题——但阈值随语料变化，彻底解法需要 cross-encoder reranker 或实体一致性校验，这是下一步方向。
+1. **简短指引类答案的保守拒答（已缓解）**：早期严格 prompt 下，1.7B 模型会把"联系售后"判为"没有处理方法"而拒答；加入重排后证据更干净，该题现已能正确作答（"应立即联系售后处理"），但这类"简短指引 vs 抗幻觉"的边界取舍在更刁钻的表述上仍可能出现，7B+ 模型更稳；
+2. **语义稀释 chunk 的漏召回（Q5，幻觉已拦，召回仍是短板）**：真答案所在 chunk（"2009-10-01 实施"）整段被英文标准标题占主导，bi-encoder 召回不进前列、cross-encoder 也打成 0 分；反而只含标准号的封面页排到最前，1.7B 模型据此把"2008"误当实施日期。这类"检索不到正确内容 + 小模型硬答"和 #3 的实体串台是不同问题，已由**答案数值接地守卫**兜住：回答里的日期/数字必须能在证据中核实，否则改判拒答——所以 Q5 现在是干净的拒答而非幻觉。但要真正**答对**它，还需改善召回（更细的 chunk、多向量/父子块检索或更强 embedding），这属下一步方向；
+3. **半域外问题的实体串台（已解决）**：最初"火星探测器的额定功率"这种"域外实体 + 域内字段"组合会以 0.465 的较高 bi-encoder 相似度命中"额定功率"chunk（域内题最低才 0.722，二者区间重叠，单一 `--min_score` 阈值拦不干净）。现在用**三级守卫**在进 LLM 前拦截:①**实体一致性守卫**确定性拦住 `A500`/`GB/T 9999` 这类查得出的伪实体;②**cross-encoder 重排**(`OpenVINO/bge-reranker-base-int8-ov`)把 (query, chunk) 联合编码,火星探测器题重排分只有 0.043、珠峰 0.006,远低于域内 0.98+;③**主体接地守卫**兜住"特斯拉 Model 3 的工作温度"这种极强字段匹配下 reranker 仍给 0.77 的反转盲区(主体词不在任何证据里→拒答)。
 
 ## 六、小结
 
