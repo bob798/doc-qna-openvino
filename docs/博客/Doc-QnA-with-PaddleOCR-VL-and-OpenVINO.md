@@ -133,19 +133,17 @@ Q1–Q4 均答对且引用正确。Q5 则展示了一道最隐蔽的 silent fail
 
 抗串台专项测试（`scripts/eval_guard.py`，5 域内 + 7 域外/串台题）：**域内 5/5 正确作答，域外 7/7 正确拒答**（旧单阈值方案仅 2/7）。最难的一类"域外实体 + 域内字段"串台——如"火星探测器的额定功率""特斯拉 Model 3 的工作温度"——也被拦下：cross-encoder 把火星探测器题的相关度压到 0.043，主体接地守卫再兜住 reranker 给了 0.77 高分的特斯拉题（"Model"/"特斯拉"不在任何证据里 → 拒答）。
 
-![启动横幅与索引构建：main.py 打印模型清单 + 守卫状态（reranker/entity_check），复用 99 chunk 的 ChromaDB 索引](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo1.png)
+**① 5 题端到端问答**（真实终端截图）：Q1–Q4 表格/标准事实全部正确作答并附 `[文档名 p.页码]` 引用；Q5 的实施日期问题被**答案数值接地守卫**拦下——模型想拿标准年份"2008"硬答"2008 年 1 月 1 日"，因证据中无法核实而改判"文档中未提及"。
 
-![Q1/Q2 表格行级 chunk 命中：工作温度 -20~70℃、额定功率 500W，每条命中附 bi-encoder score 与 cross-encoder rerank 分](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo2.png)
+![5 题端到端问答：Q1–Q4 正确作答附引用，Q5 编造的实施日期被答案数值接地守卫改判拒答](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo_5q.png)
 
-![Q3 正确作答"应立即联系售后"（重排让证据更干净）+ Q4 国际标准编号 IEC 60068-2-1:2007，均附 [文档名 p.页码] 引用](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo3.png)
+**② 域外实体串台实测**：问"特斯拉 Model 3 的工作温度"，reranker 虽因字段强匹配给到 0.770，但**主体接地守卫**发现"Model"不在任何证据里 → 直接拒答（`llm=0.0ms`，未进 LLM）。
 
-![Q5 答案数值接地守卫拦截幻觉：模型想拿标准年份编造"2008年1月1日"，因证据中无法核实被改判"文档中未提及"](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo4.png)
+![域外实体串台：特斯拉 Model 3 的工作温度被主体接地守卫拒答，llm=0ms 未进 LLM](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo_crosstalk.png)
 
-![域外实体串台实测：问"特斯拉 Model 3 的工作温度"，reranker 虽给 0.770，主体接地守卫发现"Model"不在证据 → 拒答（llm=0ms 未进 LLM）](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo5.png)
+**③ 抗串台分离度评测**（`python scripts/eval_guard.py`）：域内 **5/5 正确作答**、域外 **7/7 正确拒答**（旧单阈值仅 2/7），逐题标注由哪一级守卫拦下，并给出 bi-encoder 与 reranker 的分离区间对比。
 
-![抗串台分离度评测（scripts/eval_guard.py）：域内 5/5 正确作答、域外 7/7 正确拒答，逐题标注由哪级守卫拦下](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo6.png)
-
-> 运行录屏 `assets/demo.mp4` 为早期版本（未含重排/守卫），如需可按最新流程重录后覆盖。
+![分离度评测表：域内 5/5、域外 7/7，逐题标注拦截守卫与 bi-encoder/reranker 分离区间](https://raw.githubusercontent.com/bob798/doc-qna-openvino/main/assets/demo_eval.png)
 
 ### 性能（Intel i5，纯 CPU）
 
