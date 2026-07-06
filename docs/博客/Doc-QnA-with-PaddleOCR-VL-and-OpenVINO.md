@@ -98,9 +98,14 @@ python main.py --device GPU
 # 换更大的 LLM（如果内存充足）
 python main.py --llm_model_id OpenVINO/Qwen3-8B-int4-ov
 
-# 调整重排拒答阈值 / 关闭某道守卫做对照
+# 调整重排拒答阈值
 python main.py --rerank_min_score 0.30
-python main.py --no_reranker --no_entity_check
+
+# 四级守卫可逐个开关做消融对照（默认全开）：
+python main.py --no_reranker        # 关重排（min_score 缺省自动转 0.35 兜底）
+python main.py --no_entity_check    # 关实体码守卫（A500/未知标准号）
+python main.py --no_subject_check   # 关主体接地守卫（特斯拉 Model 3 类串台）
+python main.py --no_answer_check    # 关答案数值接地守卫（Q5 编造日期类幻觉）
 
 # 复现抗串台守卫的分离度评测（5 域内 + 7 域外题，不加载 LLM，很快）
 python scripts/eval_guard.py
